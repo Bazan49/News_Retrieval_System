@@ -17,97 +17,131 @@ Responsabilidades:
 """
 import os
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-FRONTIER_FILE = os.path.join(BASE_DIR, "frontier.csv")
-VISITED_FILE = os.path.join(BASE_DIR, "visited.csv")
-SEEDS_FILE = os.path.join(BASE_DIR, "seeds.csv")
-
-# SEEDS
-
-def load_seeds():
-
-    try:
-        with open(SEEDS_FILE, "r", encoding="utf-8") as f:
-            return [
-                line.strip()
-                for line in f
-                if line.strip()
-            ]
-
-    except FileNotFoundError:
-        return []
 
 
-# FRONTIER
-def load_frontier():
-    try:
-        with open(FRONTIER_FILE, "r", encoding="utf-8") as f:
-            urls = [line.strip() for line in f if line.strip()]
-    except FileNotFoundError:
-        urls = []
+class FrontierManager:
 
-    if not urls:
-        urls = load_seeds()
+    def __init__(self):
 
-    frontier_list = [(url, 0) for url in urls]
-    frontier_set = set(urls)
-    return frontier_list, frontier_set
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+        self.FRONTIER_FILE = os.path.join(BASE_DIR, "frontier.csv")
+        self.VISITED_FILE = os.path.join(BASE_DIR, "visited.csv")
+        self.SEEDS_FILE = os.path.join(BASE_DIR, "seeds.csv")
 
-def save_frontier(frontier_list):
-    with open(FRONTIER_FILE, "w", encoding="utf-8") as f:
-        for url in frontier_list:
-            f.write(url + "\n")
+        # Estructuras en memoria
+        self.frontier_list, self.frontier_set = self.load_frontier()
+        self.visited = self.load_visited()
 
 
+    # SEEDS
 
-def add_to_frontier(frontier_list, frontier_set, url, depth):
-    if url not in frontier_set:
-        frontier_list.append((url, depth))
-        frontier_set.add(url)
+    def load_seeds(self):
 
+        try:
+            with open(self.SEEDS_FILE, "r", encoding="utf-8") as f:
 
-def get_next_url(frontier_list, frontier_set):
-    if frontier_list:
-        url, depth = frontier_list.pop(0)
-        frontier_set.remove(url)
-        return url, depth
-    return None
+                return [
+                    line.strip()
+                    for line in f
+                    if line.strip()
+                ]
 
-
-# VISITED
-
-def load_visited():
-    try:
-        with open(VISITED_FILE, "r", encoding="utf-8") as f:
-            return set(
-                line.strip()
-                for line in f
-                if line.strip()
-            )
-
-    except FileNotFoundError:
-        return set()
+        except FileNotFoundError:
+            return []
 
 
-def save_visited(visited):
-    with open(VISITED_FILE, "w", encoding="utf-8") as f:
-        for url in visited:
-            f.write(url + "\n")
+    # FRONTIER
+
+    def load_frontier(self):
+
+        try:
+            with open(self.FRONTIER_FILE, "r", encoding="utf-8") as f:
+
+                urls = [
+                    line.strip()
+                    for line in f
+                    if line.strip()
+                ]
+
+        except FileNotFoundError:
+            urls = []
+
+        # Si frontier vacío → usar seeds
+        if not urls:
+            urls = self.load_seeds()
+
+        frontier_list = [(url, 0) for url in urls]
+        frontier_set = set(urls)
+
+        return frontier_list, frontier_set
 
 
-def add_to_visited(visited, url):
-    visited.add(url)
+    def save_frontier(self):
+
+        with open(self.FRONTIER_FILE, "w", encoding="utf-8") as f:
+
+            for url, depth in self.frontier_list:
+                f.write(url + "\n")
 
 
-# UTILIDADES
+    def add_to_frontier(self, url, depth):
 
-def already_seen(url, frontier_set, visited):
-    if url in frontier_set:
-        return True
+        if url not in self.frontier_set:
 
-    if url in visited:
-        return True
+            self.frontier_list.append((url, depth))
+            self.frontier_set.add(url)
 
-    return False
+
+    def get_next_url(self):
+
+        if self.frontier_list:
+
+            url, depth = self.frontier_list.pop(0)
+
+            self.frontier_set.remove(url)
+
+            return url, depth
+
+        return None, None
+
+
+    # VISITED
+
+    def load_visited(self):
+
+        try:
+            with open(self.VISITED_FILE, "r", encoding="utf-8") as f:
+
+                return set(
+                    line.strip()
+                    for line in f
+                    if line.strip()
+                )
+
+        except FileNotFoundError:
+            return set()
+
+
+    def save_visited(self):
+
+        with open(self.VISITED_FILE, "w", encoding="utf-8") as f:
+
+            for url in self.visited:
+                f.write(url + "\n")
+
+
+    def add_to_visited(self, url):
+
+        self.visited.add(url)
+
+
+    def already_seen(self, url):
+
+        if url in self.frontier_set:
+            return True
+
+        if url in self.visited:
+            return True
+
+        return False

@@ -1,3 +1,4 @@
-from crawler import crawl
+from crawler import Crawler
 
-crawl()
+crawler = Crawler()
+crawler.crawl(max_pages=50)
