@@ -1,113 +1,129 @@
-from anyio import Path
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin, urlparse
-from typing import List
-import csv
-import os
-from datetime import datetime
+import hashlib
+import re
+from datetime import datetime, timezone
+from urllib.parse import urlparse, urlunparse
+from newspaper import Article
 
 class Scraper:
+
     def __init__(self):
-        self.base_path = Path(__file__).parent.parent / "Data"
-        self.csv_path = self.base_path / "scraped_pages.csv"  
-        self.ensure_csv_exists()
-    
-    def scrape_page(self, html: str, url: str) -> dict:
-       
-        soup = BeautifulSoup(html, "html.parser")
-        
-        # Extraer datos
-        title = self._extract_title(soup)
-        text = self._extract_text(soup)
-        links = self._extract_internal_links(soup, url)
-        
-        result = {
-            "url": url,
-            "title": title,
-            "text": text,
-            "links": links
-        }
-        
-        # Guardar automáticamente en CSV
-        self._save_to_csv(result)
-        
-        return result
-    
-    def _extract_title(self, soup: BeautifulSoup) -> str:
+        pass
 
-        """Extrae título del <title> o primer <h1>"""
+    def normalize_url(self, url):
 
-        if soup.title and soup.title.string:
-            return soup.title.string.strip()
+        """Elimina parámetros y fragmentos para normalizar URL"""
+
+        parsed = urlparse(url)
+        clean = parsed._replace(query="", fragment="")
+        return urlunparse(clean)
+
+     
+    def clean_text(self, text):
+
+        """Limpia texto eliminando espacios extra y caracteres no deseados"""
+
+        text = re.sub(r"\s+", " ", text)
+        return text.strip()
+
+    def generate_hash(self, content):
+
+        """Genera un hash SHA-256 del contenido para detectar cambios"""
+
+        return hashlib.sha256(content.encode("utf-8")).hexdigest()
+    
+    def is_invalid_title(self, title, source_name):
+
+        """Determina si el título es incorrecto (vacío o igual al nombre del medio)"""
+
+        if not title:
+            return True
         
+        title = title.strip().lower()
+        
+        # Si el título es igual al nombre del medio
+        if title == source_name.lower():
+            return True
+        
+        return False
+    
+    def extract_title(self, article, source):
+
+        """
+        Extrae el título del artículo usando múltiples estrategias
+        """
+
+        title = article.title
+
+        if not self.is_invalid_title(title, source):
+            return self.clean_text(title)
+
+        soup = BeautifulSoup(article.html, "html.parser")
+
+        # 🔹 Intentar Open Graph
+        meta_og = soup.find("meta", property="og:title")
+        if meta_og and meta_og.get("content"):
+            return self.clean_text(meta_og["content"])
+
+        # 🔹 Intentar H1
         h1 = soup.find("h1")
         if h1:
-            return h1.get_text().strip()
-        
-        return "" # página sin título detectable
-    
-    def _extract_text(self, soup: BeautifulSoup) -> List[str]:
-        """Extrae todos los párrafos como lista"""
-        paragraphs = []
-        for p in soup.find_all("p"):
-            text = p.get_text(separator=" ", strip=True)
-            if text and len(text) > 0:  
-                paragraphs.append(text)
-        return paragraphs
-    
-    def _extract_internal_links(self, soup: BeautifulSoup, base_url: str) -> List[str]:
-        """Solo enlaces del mismo dominio"""
-        parsed_base = urlparse(base_url)
-        base_domain = parsed_base.netloc
-        
-        links = set()
-        for a in soup.find_all("a", href=True):
-            href = a["href"]
-            full_url = urljoin(base_url, href)
-            parsed = urlparse(full_url)
+            return self.clean_text(h1.get_text())
+
+        # 🔹 Intentar etiqueta <title>
+        html_title = soup.find("title")
+        if html_title:
+            return self.clean_text(html_title.get_text())
+
+        # 3️⃣ Si todo falla
+        return "Título no encontrado"
+
+    def process_url(self, url, source=None, discovered_at=None):
+
+        try:
+
+            url_normalized = self.normalize_url(url)
+
+            article = Article(url, language="es")
+            article.download()
+            article.parse()
+
+            title = self.extract_title(article, source)
+            content = article.text
+            authors = article.authors
+            publish_date = article.publish_date
+            html = article.html
+            # images = article.images
             
-            # Mismo dominio + HTTP/HTTPS
-            if (parsed.netloc == base_domain and 
-                parsed.scheme in ("http", "https")):
-                
-                # Normalizar (sin #fragment, sin / final duplicado)
-                clean_url = full_url.split("#")[0].rstrip("/")
-                links.add(clean_url)
+            content_clean = self.clean_text(content) 
+
+            # content_hash = self.generate_hash(content_clean)
+
+            document_data = {
+                "source": source,
+                "url": url,
+                "url_normalized": url_normalized,
+                "title": title,
+                "content": content_clean,
+                "authors": authors,
+                "date": publish_date,
+                # "html": html
+                # "images": images,
+                # "content_hash": content_hash,
+                "scraped_at": datetime.now(timezone.utc),
+                "discovered_at": discovered_at,
+                "indexed": False,
+                "embeddings_generated": False
+            }
+
+            print(title)
         
-        return sorted(list(links))
+        except Exception as e:
+            print(f"Error procesando {url}: {e}")
+            return None
 
-    def ensure_csv_exists(self):
-
-        """Crea la carpeta data/ y el CSV con headers si no existe"""
-        
-        os.makedirs(os.path.dirname(self.csv_path), exist_ok=True)
-        
-        if not os.path.exists(self.csv_path):
-            with open(self.csv_path, 'w', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
-                writer.writerow(["timestamp", "url", "title", "text_count", "links_count"])
-
-    def _save_to_csv(self, data: dict):
-        """Guarda cada página scrapeada en el CSV principal"""
-        with open(self.csv_path, 'a', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow([
-                datetime.now().isoformat(),
-                data["url"],
-                data["title"][:200] + "..." if len(data["title"]) > 200 else data["title"],  # truncado
-                len(data["text"]),
-                len(data["links"])
-            ])
-
-
-def scrape_page(html: str, url: str) -> dict:
-    
-    scraper = Scraper()
-    return scraper.scrape_page(html, url)
-
-# Para uso directo (pruebas)
 if __name__ == "__main__":
+    scraper = Scraper()
     # Ejemplo de uso
-    html = "<html><title>Mi Título</title><p>Texto 1</p><p>Texto 2</p><a href='/pagina'>Link</a></html>"
-    result = scrape_page(html, "https://ejemplo.com")
-    print(result)
+    url = "http://www.cubadebate.cu/noticias/2026/03/02/presidente-cubano-convoca-a-implementar-transformaciones-necesarias-al-modelo-economico-y-social/"
+    result = scraper.process_url(url, "cubadebate")
