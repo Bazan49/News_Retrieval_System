@@ -4,6 +4,7 @@ import re
 from datetime import datetime, timezone
 from urllib.parse import urlparse, urlunparse
 from newspaper import Article
+from scrapedDocument import ScrapedDocument 
 
 class Scraper:
 
@@ -99,24 +100,24 @@ class Scraper:
 
             # content_hash = self.generate_hash(content_clean)
 
-            document_data = {
-                "source": source,
-                "url": url,
-                "url_normalized": url_normalized,
-                "title": title,
-                "content": content_clean,
-                "authors": authors,
-                "date": publish_date,
-                # "html": html
-                # "images": images,
-                # "content_hash": content_hash,
-                "scraped_at": datetime.now(timezone.utc),
-                "discovered_at": discovered_at,
-                "indexed": False,
-                "embeddings_generated": False
-            }
-
-            print(title)
+            document = ScrapedDocument(
+                source=source,
+                url=url,
+                url_normalized=url_normalized,
+                title=title,
+                content=content_clean,
+                authors=authors,
+                date=publish_date,
+                html=html,
+                # images=images,
+                # content_hash=content_hash,
+                scraped_at=datetime.now(timezone.utc),
+                discovered_at=discovered_at,
+                indexed=False,
+                embeddings_generated=False
+            )
+            
+            return document
         
         except Exception as e:
             print(f"Error procesando {url}: {e}")
