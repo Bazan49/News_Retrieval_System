@@ -24,6 +24,8 @@ from frontier import FrontierManager
 
 from url_filter import URLFilter
 
+from robots import can_fetch
+
 
 # CONFIGURACION
 
@@ -117,6 +119,12 @@ class Crawler:
             if not url:
                 break
 
+            # # 🔍 Verificar robots.txt ANTES de descargar
+            # if not can_fetch(url, user_agent="MiCrawler/1.0"):   # Importar la función
+            #     print(f"Bloqueado por robots.txt: {url}")
+            #     self.frontier.add_to_visited(url)   # Opcional: marcar como visitada para no reintentar
+            #     continue
+        
             if url in self.frontier.visited:
                 continue
 

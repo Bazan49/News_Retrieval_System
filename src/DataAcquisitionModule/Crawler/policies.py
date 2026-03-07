@@ -1,0 +1,2 @@
+MAX_DEPTH = 3
+CRAWL_DELAY = 1
