@@ -54,4 +54,21 @@ class InvertedIndex:
         Busca documentos relevantes para la consulta usando TF-IDF.
         Retorna lista de (doc_id, score) ordenada por score descendente.
         """
-        raise NotImplementedError("El método search debe ser implementado.")
+        # Calcular IDF para cada término de la consulta
+        idf = {}
+        for term in set(query_tokens):
+            df = self.term_doc_freq.get(term, 0)
+            idf[term] = math.log((self.doc_count + 1) / (df + 1)) + 1
+
+        # Calcular scores para cada documento
+        scores = defaultdict(float)
+        for term in query_tokens:
+            if term in self.index:
+                for doc_id, tf in self.index[term].items():
+                    # TF normalizado
+                    tf_weight = 1 + math.log(tf) if tf > 0 else 0
+                    scores[doc_id] += tf_weight * idf[term]
+
+        # Ordenar por puntuación descendente
+        sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+        return sorted_scores
