@@ -8,11 +8,7 @@ class ScrapedDocument:
         content,
         authors,
         date,
-        html,
-        # images,
         # content_hash,
-        scraped_at,
-        discovered_at,
         indexed,
         embeddings_generated
     ):
@@ -23,11 +19,7 @@ class ScrapedDocument:
         self.content = content
         self.authors = authors
         self.date = date
-        self.html = html
-        # self.images = images
         # self.content_hash = content_hash
-        self.scraped_at = scraped_at
-        self.discovered_at = discovered_at
         self.indexed = indexed
         self.embeddings_generated = embeddings_generated
     
