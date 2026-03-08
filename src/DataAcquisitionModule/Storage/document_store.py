@@ -58,7 +58,7 @@ class DocumentStore:
             documents=[document_text]
         )
 
-        print(f"✅ Documento almacenado: {doc.url} (tipo: {doc.content_type})")
+        print(f" Documento almacenado: {doc.url} ")
         
     def get_document(self, url_normalized: str) -> Optional[Dict[str, Any]]:
         """
