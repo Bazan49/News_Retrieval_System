@@ -1,14 +1,14 @@
-from IndexModule.Application.index_service import IndexService
 from dependency_injector import containers, providers
+
+from IndexModule.Application.index_service import IndexService
 from IndexModule.Domain.document_processor import DefaultDocumentProcessor
-from IndexModule.Domain.index_repository import IndexRepository
 from IndexModule.Infrastructure.ElasticSearch.elasticsearch_index_repository import ElasticsearchIndexRepository
 from IndexModule.Infrastructure.ElasticSearch.elasticsearch_client import ElasticsearchClient
 from IndexModule.Config.settings import Settings
 
+
 class SearchContainer(containers.DeclarativeContainer):
     config = providers.Configuration()
-
     settings = providers.Singleton(Settings)
 
     es_client = providers.Singleton(
