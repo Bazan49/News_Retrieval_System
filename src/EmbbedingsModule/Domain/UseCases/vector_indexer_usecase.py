@@ -1,5 +1,5 @@
 from typing import List, Dict, Any
-from DataAcquisitionModule.Scraper.scrapedDocument import ScrapedDocument
+from DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
 from EmbbedingsModule.Domain.chunker import Chunker
 from EmbbedingsModule.Domain.embedder import BaseEmbedder
 from EmbbedingsModule.Domain.vector_store import BaseVectorStore
