@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from shlex import quote
 from typing import List, Optional, Union
 from elasticsearch import AsyncElasticsearch
 from elasticsearch.helpers import async_bulk
@@ -59,3 +60,25 @@ class ElasticsearchIndexRepository(IndexRepository):
     
     async def refresh(self) -> None:
         await self.client.indices.refresh(index=self.index_name)
+
+    async def get_term_frequency(
+        self, 
+        doc_id: str, 
+        field: str, 
+        term: str
+    ) -> int:
+        """Frecuencia EXACTA de un término en un documento específico"""
+        encoded_id = quote(doc_id)
+        
+        tv = await self.client.termvectors(
+            index=self.index_name,
+            id=encoded_id,
+            fields=[field],
+            term_statistics=False
+        )
+        
+        if 'term_vectors' in tv and field in tv['term_vectors']:
+            terms = tv['term_vectors'][field].get('terms', {})
+            return terms.get(term, {}).get('term_freq', 0)
+        
+        return 0

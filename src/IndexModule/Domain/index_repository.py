@@ -24,3 +24,12 @@ class IndexRepository(ABC):
     @abstractmethod
     async def refresh(self) -> None:
         pass
+
+    @abstractmethod
+    async def get_term_frequency(
+        self, 
+        doc_id: str, 
+        field: str, 
+        term: str
+    ) -> int:
+        pass

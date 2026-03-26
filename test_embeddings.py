@@ -9,7 +9,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from datetime import datetime
-from DataAcquisitionModule.Scraper.scrapedDocument import ScrapedDocument
+from DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
 from DI.embeddings_container import EmbeddingsContainer
 
 

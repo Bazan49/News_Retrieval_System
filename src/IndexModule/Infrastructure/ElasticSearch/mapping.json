@@ -1,6 +1,6 @@
 {
   "settings": {
-    "number_of_shards": 1,
+    "number_of_shards": 1, 
     "number_of_replicas": 0,
     "analysis": {
       "filter": {
@@ -29,10 +29,12 @@
       "title": {
         "type": "text",
         "analyzer": "spanish_analyzer",
+        "index_options": "freqs",
         "fields": {"keyword": {"type": "keyword"}}
       },
       "content": {
         "type": "text",
+        "index_options": "freqs",
         "analyzer": "spanish_analyzer"
       },
       "authors": {"type": "keyword"},

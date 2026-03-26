@@ -8,9 +8,6 @@ class ScrapedDocument:
         content,
         authors,
         date,
-        # content_hash,
-        indexed,
-        embeddings_generated
     ):
         self.source = source
         self.url = url
@@ -19,7 +16,4 @@ class ScrapedDocument:
         self.content = content
         self.authors = authors
         self.date = date
-        # self.content_hash = content_hash
-        self.indexed = indexed
-        self.embeddings_generated = embeddings_generated
     

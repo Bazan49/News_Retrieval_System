@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List
 from .document_chunk import Chunk
-from DataAcquisitionModule.Scraper.scrapedDocument import ScrapedDocument
+from DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
 
 class Chunker(ABC):
     """Interfaz de chunker (estrategia de chunking)."""

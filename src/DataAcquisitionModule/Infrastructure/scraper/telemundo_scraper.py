@@ -1,9 +1,9 @@
-import re
-from baseScraper import BaseScraper
-from newspaper import Article
-import re
+from sympy import re
+from DataAcquisitionModule.Infrastructure.scraper.base_scraper import BaseScraper
 
 class TeleMundoScraper(BaseScraper):
+    
+    """Scraper específico para TeleMundo, extiende BaseScraper para manejar casos particulares de este sitio"""
 
     def extract_authors(self, article):
 
@@ -22,23 +22,3 @@ class TeleMundoScraper(BaseScraper):
         authors_list = [a.strip() for a in authors.split(",")]
 
         return authors_list
-
-    def extract(self, url, html):
-
-        article = Article(url, language="es")
-        article.html = html
-        article.parse()
-
-        title = article.title
-        content = article.text
-        authors = self.extract_authors(article)
-        date = article.publish_date
-
-        return {
-            "title": title,
-            "content": content,
-            "authors": authors,
-            "date": date
-        }
-    
-    
