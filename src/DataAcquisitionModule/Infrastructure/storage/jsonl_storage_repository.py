@@ -1,10 +1,10 @@
 import json
 from pathlib import Path
-from DataAcquisitionModule.Domain.Interfaces.document_repository import DocumentRepository
+from DataAcquisitionModule.Domain.Interfaces.document_repository import IDocumentRepository
 
-class JSONLRepository:
+class JSONLRepository(IDocumentRepository):
 
-    def __init__(self, path="data/corpus.jsonl", batch_size=50):
+    def __init__(self, path="data/initial_corpus.jsonl", batch_size=50):
         self.path = Path(path)
         self.buffer = []
         self.batch_size = batch_size
@@ -19,9 +19,9 @@ class JSONLRepository:
         })
 
         if len(self.buffer) >= self.batch_size:
-            self._flush()
+            self.flush()
 
-    def _flush(self):
+    def flush(self):
 
         if not self.buffer:
             return

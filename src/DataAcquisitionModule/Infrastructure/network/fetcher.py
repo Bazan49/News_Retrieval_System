@@ -7,7 +7,7 @@ class Fetcher:
     """Módulo encargado de descargar páginas web y extraer enlaces."""
 
     @staticmethod
-    def fetch(self, url, max_retries=3):
+    def fetch(url, max_retries=3):
         """
         Descarga una página web.
         Devuelve el HTML o None si falla.
@@ -43,7 +43,7 @@ class Fetcher:
         return None
 
     @staticmethod
-    def extract_links(self, html, base_url):
+    def extract_links(html, base_url):
 
         soup = BeautifulSoup(html, "html.parser")
         links = set()

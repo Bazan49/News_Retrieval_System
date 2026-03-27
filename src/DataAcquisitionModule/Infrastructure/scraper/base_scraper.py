@@ -3,9 +3,9 @@ from urllib.parse import urlparse, urlunparse
 from newspaper import Article
 from DataAcquisitionModule.Domain.Entities import scrapedDocument
 from DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
-from DataAcquisitionModule.Domain.Interfaces.scraper import Scraper
+from DataAcquisitionModule.Domain.Interfaces.scraper import IScraper
 
-class BaseScraper(Scraper):
+class BaseScraper(IScraper):
 
     """Clase base para scrapers, utilizando Newspaper3k para extracción de contenido"""
     """Neswpapr3k es una librería robusta que maneja la mayoría de los casos de scraping, 
@@ -13,8 +13,8 @@ class BaseScraper(Scraper):
 
     def extract(self, url, html) -> scrapedDocument:
 
-        source = self.get_source(url_normalized)
         url_normalized = self.normalize_url(url)
+        source = self.get_source(url_normalized)
         article = self.build_article(url, html)
 
         document = ScrapedDocument(
@@ -31,7 +31,10 @@ class BaseScraper(Scraper):
 
     def build_article(self, url, html):
         article = Article(url, language="es")
-        article.html = html
+        if not html:
+            article.download()
+        else:
+            article.set_html(html)
         article.parse()
         return article
     
