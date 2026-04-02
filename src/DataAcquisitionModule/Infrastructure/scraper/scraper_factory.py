@@ -5,6 +5,7 @@ from DataAcquisitionModule.Infrastructure.scraper.cubadebate_scraper import Cuba
 from DataAcquisitionModule.Infrastructure.scraper.base_scraper import BaseScraper
 from DataAcquisitionModule.Infrastructure.scraper.presidencia_scraper import PresidenciaScraper
 from DataAcquisitionModule.Infrastructure.scraper.telemundo_scraper import TeleMundoScraper
+from DataAcquisitionModule.Infrastructure.scraper.telesur_scraper import TeleSurScraper
 
 class ScraperFactory:
 
@@ -25,6 +26,8 @@ class ScraperFactory:
             "www.actualidad.rt.com": ActualidadRTScraper,
             "presidencia.gob.cu": PresidenciaScraper,
             "www.presidencia.gob.cu": PresidenciaScraper,
+            "telesurtv.net": TeleSurScraper,
+            "www.telesurtv.net": TeleSurScraper,
         }
 
         # Devolver scraper adecuado o BaseScraper por defecto

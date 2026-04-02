@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 from bs4 import BeautifulSoup
 from DataAcquisitionModule.Infrastructure.scraper.base_scraper import BaseScraper
@@ -61,11 +62,25 @@ class TeleSurScraper(BaseScraper):
     
     def extract_date(self, article, soup=None):
         
-        if(article.published_date):
-            return article.published_date
+        if(article.publish_date):
+            return article.publish_date
 
         meta_updated = soup.find("meta", property="og:updated_time")
         if meta_updated and meta_updated.get("content"):
-            return meta_updated["content"]
+            date_str =  meta_updated["content"]
+            # Convertir ISO 8601 a datetime
+            return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
         
         return None
+    
+    def extract_content(self, article, soup=None):
+
+        content = article.text
+
+        idx = content.find("\nAutor:")
+        if idx != -1:
+            content = content[:idx].strip()
+        
+        return self.clean_text(content)
+
+            
