@@ -62,17 +62,36 @@ class LaNacionScraper(BaseScraper):
         return article.publish_date
 
     def extract_content(self, article, soup) -> str:
-       
+
+        """
+        Extrae el contenido principal de un artículo:
+        - Párrafos con clase 'com-paragraph'
+        - Títulos h2 
+        - Items de listas 'li.com-item'
+        - Títulos de pasos 'h3.step-title'
+        - Citas 'blockquote'
+        Ignora banners, scripts y otros elementos irrelevantes.
+        """
+        
         soup = soup or BeautifulSoup(article.html, 'html.parser')
-        paragraphs = soup.find_all(['p', 'h2']) 
+
+        selectors = [
+            'p.com-paragraph',
+            'li.com-item',
+            'h3.step-title',
+            'h2',
+            'blockquote'
+        ]
+
         texts = []
-        for elem in paragraphs:
-            # Incluir solo párrafos con la clase 'com-paragraph'
-            if elem.name == 'p' and 'com-paragraph' not in elem.get('class', []):
-                continue
+        for elem in soup.select(', '.join(selectors)):
+
             # separator=' ' inserta espacios entre elementos inline
             text = elem.get_text(separator=' ', strip=True)
             # Normalizar espacios múltiples a uno solo
             text = re.sub(r'\s+', ' ', text)
-            texts.append(text)
-        return '\n\n'.join(texts)  
+            if text:
+                texts.append(text)
+                
+        return self.clean_text('\n\n'.join(texts))
+    
