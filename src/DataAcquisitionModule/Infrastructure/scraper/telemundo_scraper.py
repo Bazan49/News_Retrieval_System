@@ -1,4 +1,6 @@
 import re
+import json
+from bs4 import BeautifulSoup
 from DataAcquisitionModule.Infrastructure.scraper.base_scraper import BaseScraper
 
 class TeleMundoScraper(BaseScraper):
@@ -24,17 +26,50 @@ class TeleMundoScraper(BaseScraper):
 
         return authors_list
     
-    def extract_content(self, article, soup=None):
+    def extract_content(self, article, soup) -> str:
 
-        """Extrae el contenido del artículo de TeleMundo y realiza limpieza específica para este sitio, 
-        como eliminar referencias externas y la línea de autor al inicio del texto"""
+        """
+        Extrae el contenido principal de un artículo:
+        - Párrafos con clase 'body-graf'
+        - Títulos h2 
+        - Items de listas 'li'
+        - Títulos de pasos 'h3.body-heading'
+        - Citas 'blockquote'
+        Ignora banners, scripts y otros elementos irrelevantes como referencias externas
+        y la línea de autor al inicio del texto"""
+        
+        soup = soup or BeautifulSoup(article.html, 'html.parser')
 
-        content = article.text
+        container = soup.select_one('.article-body__content')
+
+        selectors = [
+            'p.body-graf',
+            'li',
+            'h2',
+            'blockquote',
+            'h3.body-heading'
+        ]
+
+        texts = []
+        for elem in container.select(', '.join(selectors)):
+
+            # separator=' ' inserta espacios entre elementos inline
+            text = elem.get_text(separator=' ', strip=True)
+            # Normalizar espacios múltiples a uno solo
+            text = re.sub(r'\s+', ' ', text)
+            if text:
+                texts.append(text)
+                
+        content = '\n\n'.join(texts)
+
+        if not content:
+            content = article.text
+
+        # Eliminar la línea de autor al inicio del artículo si aparece, que suele empezar con "Por [nombre(s)]"
+        content = re.sub(r"^Por .*\n", "", content, count=1)
 
         # Eliminar referencias externas entre corchetes
         content = re.sub(r"\[.*?\]", "", content)
 
-        # Eliminar la línea de autor al inicio del artículo, que suele empezar con "Por [nombre(s)]"
-        content = re.sub(r"^Por .*\n", "", content, count=1)
-
         return self.clean_text(content)
+    
