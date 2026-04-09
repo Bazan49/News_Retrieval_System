@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 from DataAcquisitionModule.Infrastructure.scraper.base_scraper import BaseScraper
 import json
 from datetime import datetime
+import re
 
 class BBCScraper(BaseScraper):
     
@@ -80,20 +81,22 @@ class BBCScraper(BaseScraper):
 
                 # Párrafos <p> sin enlaces
                 if elem.name == "p" and not elem.find("a"):
-                    texto = elem.get_text(strip=True)
+                    text = elem.get_text(separator=" ", strip=True)
                     # Ignorar texto específico que no aporta al contenido
-                    if texto == "Y recuerda que puedes recibir notificaciones en nuestra app. Descarga la última versión y actívalas.":
+                    if text == "Y recuerda que puedes recibir notificaciones en nuestra app. Descarga la última versión y actívalas.":
                         continue
-                    if texto:
-                        content.append(texto)
+                    if text:
+                        text = re.sub(r'\s+', ' ', text).strip()
+                        content.append(text)
 
                 # Subtítulos <h2>
                 elif elem.name == "h2":
-                    texto = elem.get_text(strip=True)
-                    if texto:
-                        content.append(texto)
+                    text = elem.get_text(separator=" ", strip=True)
+                    if text:
+                        text = re.sub(r'\s+', ' ', text).strip()
+                        content.append(text)
 
         # Unir todo en un texto limpio
         article_text = "\n\n".join(content)
         
-        return article_text
+        return self.clean_text(article_text)
