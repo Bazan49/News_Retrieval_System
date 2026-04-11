@@ -34,7 +34,7 @@ class BaseScraper(IScraper):
                 url=url,
                 url_normalized=url_normalized,
                 title=self.extract_title(article, soup),
-                content=self.extract_content(article, soup),
+                content=content,
                 authors=self.extract_authors(article, soup),
                 date=self.extract_date(article, soup),
             )
