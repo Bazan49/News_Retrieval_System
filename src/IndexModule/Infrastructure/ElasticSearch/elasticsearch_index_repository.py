@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 from shlex import quote
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple
 from elasticsearch import AsyncElasticsearch
 from elasticsearch.helpers import async_bulk
 from IndexModule.Domain.search_document import SearchDocument
@@ -49,6 +49,23 @@ class ElasticsearchIndexRepository(IndexRepository):
                 "_source": doc.__dict__
             }
             for doc in docs
+        ]
+        await async_bulk(self.client, actions)
+    
+    async def index_bulk_with_ids(self, docs_with_ids: List[tuple[SearchDocument, str]]) -> None:
+        """
+        Bulk indexing con IDs personalizados (para documentos web).
+        
+        Args:
+            docs_with_ids: Lista de tuplas (SearchDocument, custom_id)
+        """
+        actions = [
+            {
+                "_index": self.index_name,
+                "_id": custom_id,
+                "_source": doc.__dict__
+            }
+            for doc, custom_id in docs_with_ids
         ]
         await async_bulk(self.client, actions)
     
