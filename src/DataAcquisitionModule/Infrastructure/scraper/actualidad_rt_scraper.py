@@ -2,10 +2,63 @@ from bs4 import BeautifulSoup
 from DataAcquisitionModule.Infrastructure.scraper.base_scraper import BaseScraper
 import json
 from datetime import datetime
+import re
 
 class ActualidadRTScraper(BaseScraper):
 
     """Scraper específico para Actualidad RT, extiende BaseScraper para manejar casos particulares de este sitio"""
+
+    def extract_content(self, article, soup=None) -> str:
+        """
+        Extrae contenido principal de artículos RT:
+        - Párrafos principales
+        - Títulos h2/h3
+        - Listas de items
+        - Citas
+        Ignora ruido (scripts, links, ads, tweets).
+        """
+        soup = soup or BeautifulSoup(article.html, 'html.parser')
+
+        container = soup.select_one('div.ArticleView-text')  
+        if not container:
+            return self.clean_text(article.text)
+        
+        # Elimina elementos no deseados dentro del contenedor
+        for twitter in container.find_all('div', class_='EmbedBlock-twitter'):
+            twitter.decompose()
+
+        # Selectores específicos para RT + genéricos
+        selectors = [
+            'div.Text-root > p',      # Párrafos principales de RT
+            'h2',                   # Subtítulos de nivel 2
+            'h3',                   # Subtítulos de nivel 3
+            'li',                   # Items de listas
+            'blockquote',           # Citas
+        ]
+        
+        texts = []
+        
+        for elem in container.select(', '.join(selectors)):
+            
+            text = elem.get_text(separator=' ', strip=True)
+            text = re.sub(r'\s+', ' ', text)  # Normaliza espacios
+            
+            if(text):
+                texts.append(text)
+
+        # Elimina "MINUTO A MINUTO" al final del contenido si está presente
+        if texts:
+            texts[-1] = re.sub(
+                r'[,;:.\-]?\s*MINUTO A MINUTO.*',
+                '',
+                texts[-1],
+                flags=re.IGNORECASE
+            ).strip()
+            if not texts[-1]:
+                texts.pop()
+                
+        content = '\n\n'.join(texts)
+        return self.clean_text(content) 
 
     def extract_date(self, article, soup=None):
         if not soup:
