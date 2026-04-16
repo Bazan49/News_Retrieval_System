@@ -1,44 +1,85 @@
 import gzip
 import io
+import time
+import zlib
 from urllib.request import urlopen, Request
 from urllib.robotparser import RobotFileParser
 from urllib.parse import urlparse
-import time
+from urllib.error import URLError
+import chardet
 
 class RobotsManager:
     _parsers = {}
     TTL_SECONDS = 3600
+    REQUEST_TIMEOUT = 30      
+    MAX_RETRIES = 2           # reintentos adicionales
+    RETRY_DELAY = 2           # segundos base entre reintentos
 
     @classmethod
-    def _fetch_robots_txt(cls, robots_url):
-        """Descarga robots.txt y devuelve el texto decodificado, manejando gzip."""
-        
+    def _decode_response(cls, raw_data: bytes) -> str:
+        """Decodifica bytes a str usando primero UTF-8, luego chardet, y por último latin-1."""
+        # Intento rápido con UTF-8
+        try:
+            return raw_data.decode("utf-8")
+        except UnicodeDecodeError:
+            pass
+
+        # Detección automática con chardet
+        detected = chardet.detect(raw_data)
+        encoding = detected.get("encoding")
+        confidence = detected.get("confidence", 0)
+
+        if encoding and confidence > 0.5:
+            try:
+                return raw_data.decode(encoding)
+            except (UnicodeDecodeError, LookupError):
+                pass
+
+        # Fallback final: latin-1
+        return raw_data.decode("latin-1")
+
+    @classmethod
+    def _fetch_robots_txt(cls, robots_url: str, retry: int = 0) -> str:
+        """Descarga robots.txt manejando compresión gzip/deflate y decodificación robusta."""
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
-            'Accept-Encoding': 'gzip, deflate',  # Indicamos que aceptamos compresión
+            'Accept-Encoding': 'gzip, deflate',
             'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1',
         }
         req = Request(robots_url, headers=headers)
-        
-        with urlopen(req, timeout=10) as response:
-            content_encoding = response.headers.get("Content-Encoding", "")
-            raw_data = response.read()
-            
-            if "gzip" in content_encoding:
-                with gzip.GzipFile(fileobj=io.BytesIO(raw_data)) as gz:
-                    text = gz.read().decode("utf-8")
-            elif "deflate" in content_encoding:
-                import zlib
-                try:
-                    text = zlib.decompress(raw_data, -zlib.MAX_WBITS).decode("utf-8")
-                except zlib.error:
-                    text = raw_data.decode("utf-8")
+
+        try:
+            with urlopen(req, timeout=cls.REQUEST_TIMEOUT) as response:
+                content_encoding = response.headers.get("Content-Encoding", "")
+                raw_data = response.read()
+
+                # Descompresión
+                if "gzip" in content_encoding:
+                    with gzip.GzipFile(fileobj=io.BytesIO(raw_data)) as gz:
+                        data = gz.read()
+                elif "deflate" in content_encoding:
+                    try:
+                        data = zlib.decompress(raw_data, -zlib.MAX_WBITS)
+                    except zlib.error:
+                        data = raw_data
+                else:
+                    data = raw_data
+
+                # Decodificación robusta
+                text = cls._decode_response(data)
+                return text
+
+        except (URLError, TimeoutError, Exception) as e:
+            if retry < cls.MAX_RETRIES:
+                wait = cls.RETRY_DELAY * (retry + 1)
+                print(f"[RobotsManager] Error en {robots_url} (intento {retry+1}/{cls.MAX_RETRIES+1}): {e}. Reintentando en {wait}s...")
+                time.sleep(wait)
+                return cls._fetch_robots_txt(robots_url, retry + 1)
             else:
-                text = raw_data.decode("utf-8")
-            return text
+                # Re-lanzar después de reintentos fallidos
+                raise
 
     @classmethod
     def can_fetch(cls, url: str, user_agent: str = "*") -> bool:
