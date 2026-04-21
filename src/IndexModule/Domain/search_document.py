@@ -10,5 +10,5 @@ class SearchDocument:
     title: str
     content: str
     authors: Optional[List[str]]
-    date: datetime
+    date: Optional[datetime]
 

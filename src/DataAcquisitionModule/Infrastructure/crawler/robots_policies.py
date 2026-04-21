@@ -100,7 +100,6 @@ class RobotsManager:
                     return True
                 else:
                     allowed = parser.can_fetch(user_agent, url)
-                    print(f"[RobotsManager] Cache: {user_agent} puede acceder a {url} según robots.txt de {domain}: {allowed}")
                     return allowed
             else:
                 # Caché expirada, la eliminamos para volver a descargar
@@ -109,13 +108,8 @@ class RobotsManager:
 
         # ---- Descarga fresh ----
         try:
-            print(f"[RobotsManager] Descargando robots.txt desde {robots_url} ...")
             content = cls._fetch_robots_txt(robots_url)
             
-            print("===== robots.txt de", domain, "=====")
-            print(content)
-            print("================================")
-    
             rp = RobotFileParser()
             rp.parse(content.splitlines())
             cls._parsers[domain] = (rp, time.time())
