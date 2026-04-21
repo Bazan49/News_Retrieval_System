@@ -82,7 +82,6 @@ class SRITester:
             ScrapedDocument(
                 source="cubadebate",
                 url="https://cubadebate.cu/economia/2024/01",
-                url_normalized="https://cubadebate.cu/economia/2024/01",
                 title="La economía cubana muestra signos de recuperación",
                 content="La economía cubana está mostrando signos de recuperación tras un período difícil. Los sectores turístico y agrícola han liderado el crecimiento. El gobierno ha implementado nuevas políticas para estimular la inversión extranjera y mejorar la producción nacional.",
                 authors=["María García"],
@@ -91,7 +90,6 @@ class SRITester:
             ScrapedDocument(
                 source="cubadebate",
                 url="https://cubadebate.cu/economia/2024/02",
-                url_normalized="https://cubadebate.cu/economia/2024/02",
                 title="Sector turístico cubano supera expectativas",
                 content="El sector turístico de Cuba ha superado las expectativas de crecimiento este año. Los hoteles reportan una ocupación promedio del 85%. Los expertos prevén que el turismo seguirá siendo el motor de la economía nacional.",
                 authors=["Carlos López"],
@@ -100,7 +98,6 @@ class SRITester:
             ScrapedDocument(
                 source="cubadebate",
                 url="https://cubadebate.cu/economia/2024/03",
-                url_normalized="https://cubadebate.cu/economia/2024/03",
                 title="Inversiones extranjeras en Cuba aumentan",
                 content="Las inversiones extranjeras en Cuba han aumentado significativamente en los últimos meses. Empresas de España, México y Canadá han mostrado interés en el mercado cubano. Los sectores más atractivos son el turismo y la energía renovable.",
                 authors=["Ana Martínez"],
@@ -111,7 +108,6 @@ class SRITester:
             ScrapedDocument(
                 source="cubadebate",
                 url="https://cubadebate.cu/politica/2024/01",
-                url_normalized="https://cubadebate.cu/politica/2024/01",
                 title="Gobierno anuncia nuevas políticas públicas",
                 content="El gobierno ha anunciado nuevas políticas públicas para mejorar la educación y la salud. Se invertirá en escuelas y hospitales en todo el país. Las autoridades aseguran que estas medidas beneficiarán a la población.",
                 authors=["Juan Pérez"],
@@ -120,7 +116,6 @@ class SRITester:
             ScrapedDocument(
                 source="cubadebate",
                 url="https://cubadebate.cu/politica/2024/02",
-                url_normalized="https://cubadebate.cu/politica/2024/02",
                 title="Elecciones municipales serán en 2024",
                 content="Las elecciones municipales se celebrarán en el mes de octubre de 2024. Los ciudadanos podrán elegir a sus representantes locales. El proceso electoral será supervisado por organismos internacionales.",
                 authors=["Carmen Torres"],
@@ -131,7 +126,6 @@ class SRITester:
             ScrapedDocument(
                 source="bbc",
                 url="https://bbc.com/tecnologia/2024/01",
-                url_normalized="https://bbc.com/tecnologia/2024/01",
                 title="Inteligencia artificial revoluciona la medicina",
                 content="La inteligencia artificial está revolucionando el campo de la medicina. Nuevos algoritmos pueden detectar enfermedades con mayor precisión. Los investigadores están desarrollando sistemas de diagnóstico asistido por IA.",
                 authors=["Dr. Roberto Silva"],
@@ -142,7 +136,6 @@ class SRITester:
             ScrapedDocument(
                 source="bbc",
                 url="https://bbc.com/ciencia/2024/01",
-                url_normalized="https://bbc.com/ciencia/2024/01",
                 title="Descubrimiento científico en física cuántica",
                 content="Científicos han hecho un importante descubrimiento en el campo de la física cuántica. El experimento demuestra nuevas propiedades de las partículas subatómicas. Este avance podría revolucionar la computación cuántica.",
                 authors=["Dra. Elena Vargas"],

@@ -33,7 +33,6 @@ class BaseScraper(IScraper):
         document = ScrapedDocument(
                 source=source,
                 url=url,
-                url_normalized=url_normalized,
                 title=self.extract_title(article, soup),
                 content=content,
                 authors=self.extract_authors(article, soup),
