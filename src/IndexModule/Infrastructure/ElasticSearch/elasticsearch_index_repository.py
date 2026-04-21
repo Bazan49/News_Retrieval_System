@@ -34,10 +34,11 @@ class ElasticsearchIndexRepository(IndexRepository):
         )
     
     async def index_one(self, doc: SearchDocument) -> None:
+        document = {k: v for k, v in doc.__dict__.items() if v is not None}
         await self.client.index(
             index=self.index_name,
             id=doc.url,
-            document=doc.__dict__
+            document=document
         )
     
     async def index_bulk(self, docs: List[SearchDocument]) -> None:
@@ -46,7 +47,7 @@ class ElasticsearchIndexRepository(IndexRepository):
             {
                 "_index": self.index_name,
                 "_id": doc.url,
-                "_source": doc.__dict__
+                "_source": {k: v for k, v in doc.__dict__.items() if v is not None}
             }
             for doc in docs
         ]
@@ -63,7 +64,7 @@ class ElasticsearchIndexRepository(IndexRepository):
             {
                 "_index": self.index_name,
                 "_id": custom_id,
-                "_source": doc.__dict__
+                "_source": {k: v for k, v in doc.__dict__.items() if v is not None}
             }
             for doc, custom_id in docs_with_ids
         ]

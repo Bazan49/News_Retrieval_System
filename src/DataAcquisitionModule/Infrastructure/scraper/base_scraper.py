@@ -1,4 +1,5 @@
 import re
+import unicodedata
 from urllib.parse import urlparse, urlunparse
 from bs4 import BeautifulSoup
 from newspaper import Article
@@ -60,15 +61,31 @@ class BaseScraper(IScraper):
         return urlunparse(clean)
     
     def clean_text(self, text):
-        # 1. Normaliza saltos de línea (por si hay \r\n o múltiples \n)
-        text = re.sub(r'\r\n?', '\n', text)
+        if not text:
+            return ""
         
-        # 2. Reemplaza múltiples espacios dentro de una línea por uno solo
-        lines = text.split('\n')
-        cleaned_lines = [re.sub(r'\s+', ' ', line).strip() for line in lines]
+        # Normalizar unicode
+        text = unicodedata.normalize('NFKC', text)
         
-        # 3. Une las líneas, conservando saltos de línea solo si no están vacías
-        return '\n'.join([line for line in cleaned_lines if line])
+        # Eliminar caracteres de control (excepto saltos y tabs)
+        text = ''.join(
+            c for c in text 
+            if unicodedata.category(c) != 'Cc' or c in '\n\t'  
+        )
+        
+        # Normalizar saltos de línea
+        text = re.sub(r'\r\n?', '\n', text)         
+        
+        # Limpiar espacios múltiples
+        text = re.sub(r'[\t ]+', ' ', text)  
+
+        # Limpiar espacios alrededor de saltos de línea
+        text = re.sub(r' *\n *', '\n', text)       
+        
+        # Reducir saltos excesivos (mantener párrafos)
+        text = re.sub(r'\n{3,}', '\n\n', text)      
+        
+        return text.strip()
 
     def extract_title(self, article, soup=None):
         return article.title
