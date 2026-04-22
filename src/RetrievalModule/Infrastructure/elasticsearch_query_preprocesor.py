@@ -1,5 +1,5 @@
 from typing import List
-from RetrievalModule.Domain.query_preprocessor import QueryPreprocessor
+from src.RetrievalModule.Domain.query_preprocessor import QueryPreprocessor
 from elasticsearch import AsyncElasticsearch
 
 class ElasticsearchQueryPreprocessor(QueryPreprocessor):

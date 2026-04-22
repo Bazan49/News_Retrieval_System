@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from DataAcquisitionModule.Domain.Interfaces.document_repository import IDocumentRepository
+from src.DataAcquisitionModule.Domain.Interfaces.document_repository import IDocumentRepository
 
 class JSONLRepository(IDocumentRepository):
 

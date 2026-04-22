@@ -1,12 +1,12 @@
 from urllib.parse import urlparse
-from DataAcquisitionModule.Infrastructure.scraper.actualidad_rt_scraper import ActualidadRTScraper
-from DataAcquisitionModule.Infrastructure.scraper.bbc_scraper import BBCScraper
-from DataAcquisitionModule.Infrastructure.scraper.cubadebate_scraper import CubadebateScraper
-from DataAcquisitionModule.Infrastructure.scraper.base_scraper import BaseScraper
-from DataAcquisitionModule.Infrastructure.scraper.presidencia_scraper import PresidenciaScraper
-from DataAcquisitionModule.Infrastructure.scraper.telemundo_scraper import TeleMundoScraper
-from DataAcquisitionModule.Infrastructure.scraper.telesur_scraper import TeleSurScraper
-from DataAcquisitionModule.Infrastructure.scraper.la_nacion_scraper import LaNacionScraper
+from src.DataAcquisitionModule.Infrastructure.scraper.actualidad_rt_scraper import ActualidadRTScraper
+from src.DataAcquisitionModule.Infrastructure.scraper.bbc_scraper import BBCScraper
+from src.DataAcquisitionModule.Infrastructure.scraper.cubadebate_scraper import CubadebateScraper
+from src.DataAcquisitionModule.Infrastructure.scraper.base_scraper import BaseScraper
+from src.DataAcquisitionModule.Infrastructure.scraper.presidencia_scraper import PresidenciaScraper
+from src.DataAcquisitionModule.Infrastructure.scraper.telemundo_scraper import TeleMundoScraper
+from src.DataAcquisitionModule.Infrastructure.scraper.telesur_scraper import TeleSurScraper
+from src.DataAcquisitionModule.Infrastructure.scraper.la_nacion_scraper import LaNacionScraper
 
 class ScraperFactory:
 

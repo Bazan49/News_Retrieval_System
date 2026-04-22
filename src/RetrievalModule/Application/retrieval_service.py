@@ -1,10 +1,10 @@
 from typing import Any, Dict, List
 
-from RetrievalModule.Application.lmir_retriever import LMIRScoreFunction
-from RetrievalModule.Domain.retrieval_result import RetrievalResult
-from RetrievalModule.Domain.retriever_repository import RetrieverRepository
-from RetrievalModule.Domain.stats_repository import StatsRepository
-from RetrievalModule.Domain.query_preprocessor import QueryPreprocessor
+from src.RetrievalModule.Application.lmir_retriever import LMIRScoreFunction
+from src.RetrievalModule.Domain.retrieval_result import RetrievalResult
+from src.RetrievalModule.Domain.retriever_repository import RetrieverRepository
+from src.RetrievalModule.Domain.stats_repository import StatsRepository
+from src.RetrievalModule.Domain.query_preprocessor import QueryPreprocessor
 
 
 class RetrievalAppService():

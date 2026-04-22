@@ -1,7 +1,7 @@
 from typing import List
-from DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
-from IndexModule.Domain.document_processor import DefaultDocumentProcessor
-from IndexModule.Domain.index_repository import IndexRepository
+from src.DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
+from src.IndexModule.Domain.document_processor import DefaultDocumentProcessor
+from src.IndexModule.Domain.index_repository import IndexRepository
 
 class IndexService:
     def __init__(

@@ -1,9 +1,9 @@
 from dependency_injector import containers, providers
 
-from WebSearchModule.Application.web_search_service import WebSearchService
-from WebSearchModule.Infrastructure.rss.google_news_rss_fetcher import GoogleNewsRSSFetcher
-from WebSearchModule.Infrastructure.insufficiency_detector_impl import SimpleInsufficientResultsDetector
-from WebSearchModule.Infrastructure.web_search_document_processor import WebSearchDocumentProcessor
+from src.WebSearchModule.Application.web_search_service import WebSearchService
+from src.WebSearchModule.Infrastructure.rss.google_news_rss_fetcher import GoogleNewsRSSFetcher
+from src.WebSearchModule.Infrastructure.insufficiency_detector_impl import SimpleInsufficientResultsDetector
+from src.WebSearchModule.Infrastructure.web_search_document_processor import WebSearchDocumentProcessor
 
 
 class WebSearchContainer(containers.DeclarativeContainer):

@@ -5,13 +5,10 @@ from pathlib import Path
 from datetime import datetime
 
 # Asegura que el paquete `src/` esté en el path
-ROOT = Path(__file__).resolve().parent.parent 
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from DI.continer import SearchContainer
-from DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
+from src.DI.continer import SearchContainer
+from src.DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
 
 container = SearchContainer()
 container.wire(modules=[__name__])
@@ -20,7 +17,7 @@ async def main():
     index_service = container.index_service()
     
     # Ruta al archivo JSONL con los documentos a indexar
-    jsonl_path = ROOT / "data" / "initial_corpus.jsonl"  
+    jsonl_path = Path("data") / "a.jsonl" 
     
     scraped_docs = []
     with open(jsonl_path, "r", encoding="utf-8") as f:

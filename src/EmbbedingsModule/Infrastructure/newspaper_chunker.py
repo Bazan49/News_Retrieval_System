@@ -1,5 +1,5 @@
 from typing import List
-from DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
+from src.DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
 from ..Domain.chunker import Chunker
 from ..Domain.document_chunk import Chunk, ChunkMetadata
 import tiktoken
@@ -56,9 +56,8 @@ class NewspaperChunker(Chunker):
 
         chunk_text = " ".join(sentences)
         chunk_metadata = ChunkMetadata(
-            doc_id=document.url_normalized,
+            doc_id=document.url,
             source=document.source,
-            url=document.url,
             title=document.title,
             publication_date=document.date,
             authors=document.authors,
@@ -67,7 +66,7 @@ class NewspaperChunker(Chunker):
         )
 
         chunk = Chunk(
-                id=f"{document.url_normalized}_{chunk_metadata.chunk_number}",
+                id=f"{document.url}_{chunk_metadata.chunk_number}",
                 content=chunk_text,
                 metadata=chunk_metadata.to_dict()   
             )

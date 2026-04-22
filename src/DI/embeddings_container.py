@@ -1,12 +1,12 @@
 from dependency_injector import containers, providers
-from EmbbedingsModule.Domain.UseCases.vector_indexer_usecase import VectorIndexer
-from EmbbedingsModule.Domain.UseCases.vector_searcher_usecase import VectorSearcher
-from EmbbedingsModule.Domain.chunker import Chunker
-from EmbbedingsModule.Domain.embedder import BaseEmbedder
-from EmbbedingsModule.Domain.vector_store import BaseVectorStore
-from EmbbedingsModule.Infrastructure.newspaper_chunker import NewspaperChunker
-from EmbbedingsModule.Infrastructure.sentence_transformer_embedder import SentenceTransformerEmbedder
-from EmbbedingsModule.Infrastructure.chroma_vector_store import ChromaVectorStore
+from src.EmbbedingsModule.Domain.UseCases.vector_indexer_usecase import VectorIndexer
+from src.EmbbedingsModule.Domain.UseCases.vector_searcher_usecase import VectorSearcher
+from src.EmbbedingsModule.Domain.chunker import Chunker
+from src.EmbbedingsModule.Domain.embedder import BaseEmbedder
+from src.EmbbedingsModule.Domain.vector_store import BaseVectorStore
+from src.EmbbedingsModule.Infrastructure.newspaper_chunker import NewspaperChunker
+from src.EmbbedingsModule.Infrastructure.sentence_transformer_embedder import SentenceTransformerEmbedder
+from src.EmbbedingsModule.Infrastructure.chroma_vector_store import ChromaVectorStore
 
 
 class EmbeddingsContainer(containers.DeclarativeContainer):
@@ -21,12 +21,13 @@ class EmbeddingsContainer(containers.DeclarativeContainer):
 
     embedder = providers.Singleton(
         SentenceTransformerEmbedder,
-        model_name="intfloat/multilingual-e5-large"
+        model_name= "all-MiniLM-L6-v2" #intfloat/multilingual-e5-large",
+        # backend="onnx"
     )
 
     vector_store = providers.Singleton(
         ChromaVectorStore,
-        collection_name="test_documents",
+        collection_name="news_embeddings",
         persist_path="./chroma_db"
     )
 

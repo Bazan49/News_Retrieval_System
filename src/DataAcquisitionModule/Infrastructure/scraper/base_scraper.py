@@ -3,9 +3,9 @@ import unicodedata
 from urllib.parse import urlparse, urlunparse
 from bs4 import BeautifulSoup
 from newspaper import Article
-from DataAcquisitionModule.Domain.Entities import scrapedDocument
-from DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
-from DataAcquisitionModule.Domain.Interfaces.scraper import IScraper
+from src.DataAcquisitionModule.Domain.Entities import scrapedDocument
+from src.DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
+from src.DataAcquisitionModule.Domain.Interfaces.scraper import IScraper
 
 class BaseScraper(IScraper):
 
@@ -15,8 +15,7 @@ class BaseScraper(IScraper):
 
     def extract(self, url, html) -> scrapedDocument:
 
-        url_normalized = self.normalize_url(url)
-        source = self.get_source(url_normalized)
+        source = self.get_source(url)
         article = self.build_article(url, html)
 
         # Validar que sea un artículo real (no una página de categoría, por ejemplo)
@@ -53,11 +52,6 @@ class BaseScraper(IScraper):
     def get_source(self, url):
         parsed = urlparse(url)
         return parsed.netloc.replace("www.", "")
-    
-    def normalize_url(self, url):
-        parsed = urlparse(url)
-        clean = parsed._replace(query="", fragment="")
-        return urlunparse(clean)
     
     def clean_text(self, text):
         if not text:

@@ -1,7 +1,7 @@
 import re
 import json
 from bs4 import BeautifulSoup
-from DataAcquisitionModule.Infrastructure.scraper.base_scraper import BaseScraper
+from src.DataAcquisitionModule.Infrastructure.scraper.base_scraper import BaseScraper
 from datetime import datetime
 
 class TeleMundoScraper(BaseScraper):

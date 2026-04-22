@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
-from EmbbedingsModule.Domain.embedder import BaseEmbedder
-from EmbbedingsModule.Domain.vector_store import BaseVectorStore
+from src.EmbbedingsModule.Domain.embedder import BaseEmbedder
+from src.EmbbedingsModule.Domain.vector_store import BaseVectorStore
 
 
 class VectorSearcher:

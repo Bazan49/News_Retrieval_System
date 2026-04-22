@@ -3,8 +3,8 @@ import urllib.parse
 import asyncio
 from datetime import datetime
 from typing import List
-from WebSearchModule.Domain.web_search_result import WebSearchResult
-from WebSearchModule.Domain.web_search_repository import WebSearchRepository
+from src.WebSearchModule.Domain.web_search_result import WebSearchResult
+from src.WebSearchModule.Domain.web_search_repository import WebSearchRepository
 
 
 class GoogleNewsRSSFetcher(WebSearchRepository):
