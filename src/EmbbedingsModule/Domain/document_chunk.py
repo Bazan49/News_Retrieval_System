@@ -7,7 +7,6 @@ from typing import Dict, Any, Optional
 class ChunkMetadata:
     doc_id: str
     source: str
-    url: str
     title: str
     publication_date: Optional[datetime] = None
     authors: Optional[list] = None          # Lista de autores
@@ -16,9 +15,8 @@ class ChunkMetadata:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            "doc_id": self.doc_id,
+            "doc_id": self.doc_id,  # ID del documento original (URL)
             "source": self.source,
-            "url": self.url,
             "title": self.title,
             "publication_date": self.publication_date.isoformat() if self.publication_date else None,
             "authors": self.authors if self.authors else [],
