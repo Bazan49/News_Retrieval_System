@@ -1,6 +1,6 @@
-from DataAcquisitionModule.Infrastructure.crawler.crawler import Crawler
-from DataAcquisitionModule.Infrastructure.scraper.scraper_factory import ScraperFactory
-from DataAcquisitionModule.Infrastructure.storage.jsonl_storage_repository import JSONLRepository
+from src.DataAcquisitionModule.Infrastructure.crawler.crawler import Crawler
+from src.DataAcquisitionModule.Infrastructure.scraper.scraper_factory import ScraperFactory
+from src.DataAcquisitionModule.Infrastructure.storage.jsonl_storage_repository import JSONLRepository
 
 class DataAcquisitionService:
     def __init__(self, max_pages=50, max_depth=3, delay=1, batch_size=10):

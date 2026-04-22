@@ -1,5 +1,5 @@
 from typing import Any, Dict, List
-from WebSearchModule.Domain.insufficiency_detector import InsufficientResultsDetector
+from src.WebSearchModule.Domain.insufficiency_detector import InsufficientResultsDetector
 
 
 class SimpleInsufficientResultsDetector(InsufficientResultsDetector):

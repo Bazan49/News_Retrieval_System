@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List
-from WebSearchModule.Domain.web_search_result import WebSearchResult
+from src.WebSearchModule.Domain.web_search_result import WebSearchResult
 
 
 class WebSearchRepository(ABC):

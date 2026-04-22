@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from DataAcquisitionModule.Domain.Entities import scrapedDocument
+from src.DataAcquisitionModule.Domain.Entities import scrapedDocument
 
 class IScraper(ABC):
 

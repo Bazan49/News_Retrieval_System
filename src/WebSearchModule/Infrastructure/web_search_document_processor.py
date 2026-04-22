@@ -1,9 +1,8 @@
 from datetime import datetime
 from typing import List
 import hashlib
-from WebSearchModule.Domain.web_search_result import WebSearchResult
-from IndexModule.Domain.search_document import SearchDocument
-
+from src.WebSearchModule.Domain.web_search_result import WebSearchResult
+from src.IndexModule.Domain.search_document import SearchDocument
 
 class WebSearchDocumentProcessor:
     """

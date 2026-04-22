@@ -1,8 +1,7 @@
 from typing import List
 import numpy as np
 from sentence_transformers import SentenceTransformer
-from EmbbedingsModule.Domain.embedder import BaseEmbedder
-
+from src.EmbbedingsModule.Domain.embedder import BaseEmbedder
 
 class SentenceTransformerEmbedder(BaseEmbedder):
     """Implementación concreta con multilingual-e5-large."""

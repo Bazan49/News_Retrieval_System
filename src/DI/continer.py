@@ -1,20 +1,19 @@
 from dependency_injector import containers, providers
 
-from IndexModule.Application.index_service import IndexService
-from IndexModule.Domain.document_processor import DefaultDocumentProcessor
-from IndexModule.Infrastructure.ElasticSearch.elasticsearch_index_repository import ElasticsearchIndexRepository
-from IndexModule.Infrastructure.ElasticSearch.elasticsearch_client import ElasticsearchClient
-from IndexModule.Config.settings import Settings
-from WebSearchModule.Application.web_search_service import WebSearchService
-from WebSearchModule.Infrastructure.rss.google_news_rss_fetcher import GoogleNewsRSSFetcher
-from WebSearchModule.Infrastructure.insufficiency_detector_impl import SimpleInsufficientResultsDetector
-from WebSearchModule.Infrastructure.web_search_document_processor import WebSearchDocumentProcessor
-from RetrievalModule.Application.retrieval_service import RetrievalAppService
-from RetrievalModule.Application.lmir_retriever import LMIRScoreFunction
-from RetrievalModule.Infrastructure.elasticsearch_retriever import ElasticsearchRetriever
-from RetrievalModule.Infrastructure.elasticsearch_stats_repository import ElasticsearchStatsRepository
-from RetrievalModule.Infrastructure.elasticsearch_query_preprocesor import ElasticsearchQueryPreprocessor
-
+from src.IndexModule.Application.index_service import IndexService
+from src.IndexModule.Domain.document_processor import DefaultDocumentProcessor
+from src.IndexModule.Infrastructure.ElasticSearch.elasticsearch_index_repository import ElasticsearchIndexRepository
+from src.IndexModule.Infrastructure.ElasticSearch.elasticsearch_client import ElasticsearchClient
+from src.IndexModule.Config.settings import Settings
+from src.WebSearchModule.Application.web_search_service import WebSearchService
+from src.WebSearchModule.Infrastructure.rss.google_news_rss_fetcher import GoogleNewsRSSFetcher
+from src.WebSearchModule.Infrastructure.insufficiency_detector_impl import SimpleInsufficientResultsDetector
+from src.WebSearchModule.Infrastructure.web_search_document_processor import WebSearchDocumentProcessor
+from src.RetrievalModule.Application.retrieval_service import RetrievalAppService
+from src.RetrievalModule.Application.lmir_retriever import LMIRScoreFunction
+from src.RetrievalModule.Infrastructure.elasticsearch_retriever import ElasticsearchRetriever
+from src.RetrievalModule.Infrastructure.elasticsearch_stats_repository import ElasticsearchStatsRepository
+from src.RetrievalModule.Infrastructure.elasticsearch_query_preprocesor import ElasticsearchQueryPreprocessor
 
 class SearchContainer(containers.DeclarativeContainer):
     config = providers.Configuration()
@@ -42,7 +41,7 @@ class SearchContainer(containers.DeclarativeContainer):
         factory=document_processor,
     )
 
-    # WebSearchModule dependencies
+    # src.WebSearchModule dependencies
     web_search_fetcher = providers.Singleton(
         GoogleNewsRSSFetcher,
         lang="es-419",

@@ -4,8 +4,8 @@ from shlex import quote
 from typing import List, Optional, Union, Tuple
 from elasticsearch import AsyncElasticsearch
 from elasticsearch.helpers import async_bulk
-from IndexModule.Domain.search_document import SearchDocument
-from IndexModule.Domain.index_repository import IndexRepository
+from src.IndexModule.Domain.search_document import SearchDocument
+from src.IndexModule.Domain.index_repository import IndexRepository
 
 class ElasticsearchIndexRepository(IndexRepository):
     def __init__(

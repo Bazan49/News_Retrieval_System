@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-from DataAcquisitionModule.Infrastructure.scraper.base_scraper import BaseScraper
+from src.DataAcquisitionModule.Infrastructure.scraper.base_scraper import BaseScraper
 import json
 from datetime import datetime
 import re

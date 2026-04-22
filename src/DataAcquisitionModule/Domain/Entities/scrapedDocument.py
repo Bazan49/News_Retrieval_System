@@ -3,7 +3,6 @@ class ScrapedDocument:
         self,
         source,
         url,
-        url_normalized,
         title,
         content,
         authors,
@@ -11,7 +10,6 @@ class ScrapedDocument:
     ):
         self.source = source
         self.url = url
-        self.url_normalized = url_normalized
         self.title = title
         self.content = content
         self.authors = authors

@@ -1,7 +1,7 @@
-from DataAcquisitionModule.Infrastructure.network.fetcher import Fetcher
-from DataAcquisitionModule.Infrastructure.crawler.robots_policies import RobotsManager
-from DataAcquisitionModule.Infrastructure.crawler.frontier_manager import FrontierManager
-from DataAcquisitionModule.Infrastructure.crawler.url_filter import URLFilter
+from src.DataAcquisitionModule.Infrastructure.network.fetcher import Fetcher
+from src.DataAcquisitionModule.Infrastructure.crawler.robots_policies import RobotsManager
+from src.DataAcquisitionModule.Infrastructure.crawler.frontier_manager import FrontierManager
+from src.DataAcquisitionModule.Infrastructure.crawler.url_filter import URLFilter
 import time
 
 class Crawler:

@@ -1,5 +1,5 @@
-from DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
-from IndexModule.Domain.search_document import SearchDocument
+from src.DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
+from src.IndexModule.Domain.search_document import SearchDocument
 
 class DefaultDocumentProcessor:
     """Procesador por defecto para ScrapedDocument -> SearchDocument"""
