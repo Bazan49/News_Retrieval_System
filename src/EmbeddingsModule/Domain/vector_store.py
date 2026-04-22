@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
+from unicodedata import name
 import numpy as np
 
 
@@ -7,7 +8,7 @@ class BaseVectorStore(ABC):
     """Interfaz para almacenamiento vectorial (domain)."""
     
     @abstractmethod
-    def add(
+    async def add(
         self, 
         ids: List[str],
         embeddings: np.ndarray,
@@ -18,7 +19,7 @@ class BaseVectorStore(ABC):
         pass
     
     @abstractmethod
-    def search(
+    async def search(
         self, 
         query_vector: np.ndarray, 
         k: int = 10,
@@ -28,18 +29,7 @@ class BaseVectorStore(ABC):
         pass
     
     @abstractmethod
-    def delete(self, ids: List[str]) -> None:
+    async def delete(self, ids: List[str]) -> None:
         """Elimina vectores por IDs."""
-        pass
-    
-    @abstractmethod
-    def update(
-        self,
-        ids: List[str],
-        embeddings: Optional[np.ndarray] = None,
-        documents: Optional[List[str]] = None,
-        metadata: Optional[List[Dict[str, Any]]] = None
-    ) -> None:
-        """Actualiza vectores existentes."""
         pass
     
