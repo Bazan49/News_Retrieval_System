@@ -1,4 +1,6 @@
 from typing import List
+
+import nltk
 from src.DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
 from ..Domain.chunker import Chunker
 from ..Domain.document_chunk import Chunk, ChunkMetadata
@@ -7,6 +9,13 @@ from nltk.tokenize import sent_tokenize
 
 class NewspaperChunker(Chunker):
     def __init__(self, max_tokens=420, overlap=80, model_name="gpt-3.5-turbo"):
+
+        # # Descargar recursos de NLTK si no existen
+        # try:
+        #     nltk.data.find('tokenizers/punkt')
+        # except LookupError:
+        #     nltk.download('punkt', quiet=True)
+            
         self.max_tokens = max_tokens 
         self.overlap = overlap 
         self.encoder = tiktoken.encoding_for_model(model_name)
@@ -79,7 +88,6 @@ class NewspaperChunker(Chunker):
         return [s.strip() for s in sentences if s.strip()]
 
     def _estimate_tokens(self, text: str) -> int:
-        # una forma rápida de estimar tokens es contar palabras, pero usar el encoder del modelo es más preciso
         return len(self.encoder.encode(text))
 
     def _smart_overlap(self, current_sentences: List[str]) -> List[str]:
