@@ -10,9 +10,9 @@ def _standardize_item(item: Dict[str, Any]) -> Dict[str, Any]:
     # Para dense: item puede venir con 'id', 'title', 'url', 'source', 'date', 'score', 'snippet'
     # Para sparse/hybrid: tienen 'url', 'title', 'content', 'score', 'source', 'snippet'
     return {
-        "id": item.get("id") or item.get("url", ""),
+        "id": item.get("id") or item.get("url", ""),  # usar 'id' si existe, sino 'url' como fallback
         "title": item.get("title", "Sin título"),
-        "url": item.get("url") or item.get("id", ""),
+        "url": item.get("url", ""),
         "source": item.get("source", ""),
         "date": item.get("date", ""),
         "score": item.get("score", 0.0),
@@ -30,9 +30,9 @@ def _format_dense_results(raw: Dict[str, List[Any]]) -> List[Dict[str, Any]]:
         item = {
             "id": ids[idx],
             "title": metadatas[idx].get("title", "Sin título") if idx < len(metadatas) else "",
-            "url": ids[idx],
+            "url": metadatas[idx].get("doc_id", "") if idx < len(metadatas) else "",
             "source": metadatas[idx].get("source", "") if idx < len(metadatas) else "",
-            "date": metadatas[idx].get("date", "") if idx < len(metadatas) else "",
+            "date": metadatas[idx].get("publication_date", "") if idx < len(metadatas) else "",
             "score": 1 - (distances[idx] / 2) if idx < len(distances) else 0,
             "snippet": docs[idx][:200] + "..." if idx < len(docs) else ""
         }
