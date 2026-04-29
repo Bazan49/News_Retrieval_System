@@ -5,7 +5,7 @@ from src.EmbeddingsModule.Domain.embedder import BaseEmbedder
 from src.EmbeddingsModule.Domain.vector_store import BaseVectorStore
 
 class VectorIndexer:
-    def __init__(self, chunker: Chunker, embedder: BaseEmbedder, vector_store: BaseVectorStore, batch_size: int = 250):
+    def __init__(self, chunker: Chunker, embedder: BaseEmbedder, vector_store: BaseVectorStore, batch_size: int = 16):
         self.chunker = chunker
         self.embedder = embedder
         self.vector_store = vector_store

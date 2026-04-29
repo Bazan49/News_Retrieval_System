@@ -10,12 +10,17 @@ class Settings(BaseSettings):
     
     # ChromaDB
     chroma_host: str = "localhost"
-    chroma_port: int = 8000
+    chroma_port: int = 8001
     chroma_collection: str = "news_embeddings"
     
     # Embeddings
-    embedding_model: str = "all-MiniLM-L6-v2"
-    embedding_backend: Optional[str] = None  
+    embedding_model: str = "jinaai/jina-embeddings-v2-base-es"
+    model_max_seq_len: int = 8192
+    embedding_backend: Optional[str] = None 
+
+    # Chunking
+    chunker_max_tokens: int = 1024
+    overlap_percent: int = 15
     
     class Config:
         env_file = ".env"
