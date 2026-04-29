@@ -13,8 +13,9 @@ class EmbeddingsContainer(containers.DeclarativeContainer):
     # Infrastructure
     chunker = providers.Factory(
         NewspaperChunker,
-        max_tokens=400,
-        overlap=50
+        max_tokens=settings.provided.chunker_max_tokens,
+        overlap_percent=settings.provided.overlap_percent,
+        model_name=settings.provided.embedding_model
     )
 
     embedder = providers.Singleton(

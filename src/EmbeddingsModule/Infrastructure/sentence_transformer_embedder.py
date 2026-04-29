@@ -8,10 +8,11 @@ class SentenceTransformerEmbedder(BaseEmbedder):
     """Implementación concreta de BaseEmbedder utilizando SentenceTransformer."""
 
     def __init__(self, model_name: str, backend: str = None):
+
         if backend:
-            self.model = SentenceTransformer(model_name, backend=backend)
+            self.model = SentenceTransformer(model_name, trust_remote_code=True, backend=backend)
         else:
-            self.model = SentenceTransformer(model_name)
+            self.model = SentenceTransformer(model_name, trust_remote_code=True)
 
     async def encode(self, texts: List[str]) -> np.ndarray:
         # Ejecutar el encode bloqueante en un hilo separado
