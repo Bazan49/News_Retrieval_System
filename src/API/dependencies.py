@@ -1,3 +1,5 @@
+from src.RAG_Module.Infrastructure.groq_generator import GroqGenerator
+from src.RAG_Module.Application.rag_service import RAGService
 from src.RetrievalModule.Application.hybrid_retrieval_service import HybridRetrievalAppService
 from src.DI.continer import SearchContainer      
 from src.DI.embeddings_container import EmbeddingsContainer 
@@ -18,3 +20,9 @@ def get_hybrid_service():
 def get_dense_service():
     """Retorna el servicio de búsqueda densa (embeddings + ChromaDB)"""
     return _embeddings_container.vector_searcher()
+
+def get_rag_service():
+    retriever = get_hybrid_service()
+    # Usamos el generador de Groq con el modelo que recomendamos
+    generator = GroqGenerator(model_id="llama-3.3-70b-versatile")
+    return RAGService(retriever, generator)             

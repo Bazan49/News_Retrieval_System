@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     # Chunking
     chunker_max_tokens: int = 1024
     overlap_percent: int = 15
+
+    # RAG
+    groq_api_key: Optional[str] = None
     
     class Config:
         env_file = ".env"
