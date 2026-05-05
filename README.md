@@ -5,22 +5,26 @@ Sistema de Recuperación de Información (SRI) diseñado para explorar, buscar y
 ## 📁 Estructura del Proyecto
 
 ```
-News_Retrieval_System/
-├── data/                 # Datos iniciales (JSONL, etc.)
-├── docs/                 # Documentación (Chunking_strategy.md, etc.)
-├── scripts/              # Scripts para poblar bases de datos
-├── src/                  # Código fuente
-│   ├── API/              # Endpoints FastAPI
-│   ├── EmbeddingsModule/ # Chunking y embeddings
-│   ├── IndexModule/      # Indexación
-│   ├── RetrievalModule/  # Recuperación
-│   └── main.py           # Punto de entrada de la API
-├── tests/                # Pruebas unitarias
-├── venv_sri/             # Entorno virtual
-├── .env.example          # Ejemplo de configuraciones
-└── README.md             # Este archivo
+SRI_Project/
+├── data/                      # Datos iniciales 
+├── docs/                      # Documentación del proyecto
+├── scripts/                   # Scripts para poblar bases de datos y otras utilidades
+├── src/                       # Código fuente
+│   ├── main.py                # Punto de entrada de la API
+│   ├── API/                   # Endpoints FastAPI
+│   ├── DataAcquisitionModule/ # Adquisición de datos
+│   ├── DI/                    # Inyección de dependencias
+│   ├── EmbeddingsModule/      # Chunking y embeddings
+│   ├── IndexModule/           # Indexación
+│   ├── RAG_Module/            # Generación Aumentada por Recuperación
+│   ├── RetrievalModule/       # Recuperación de información
+│   └── WebSearchModule/       # Búsqueda web externa
+├── tests/                     # Pruebas
+├── .env.example               # Ejemplo de configuraciones
+├── .gitignore                 # Archivos ignorados por Git
+├── README.md                  # Este archivo
+└── requirements.txt           # Dependencias del proyecto
 ```
-
 
 ## 🚀 Inicio 
 
@@ -41,7 +45,7 @@ Crea y activa un entorno virtual para aislar las dependencias:
 
 ```bash
 # Crear entorno virtual
-python -m venv venv_sri
+python -m venv venv
 
 # Activar en Windows
 venv_sri\Scripts\activate
@@ -62,7 +66,18 @@ pip install -r requirements.txt
    cp .env.example .env
    ```
 
-2. Edita `.env` con tus configuraciones (ej. claves de API, puertos, rutas):
+2. Edita `.env` con tus configuraciones (ej. claves de API, puertos, rutas)
+
+> **🔧 Configuración de la API de Groq (para RAG)**
+>
+> Para el funcionamiento del módulo RAG (generación de respuestas), necesitas una clave de API de Groq.
+>
+> 1. Regístrate en [console.groq.com](https://console.groq.com) y obtén una API Key **gratuita**.
+> 2. Añade la clave asignada a tu archivo `.env`:
+>
+> ```env
+> GROQ_API_KEY=tu_clave_aqui
+> ```
 
 ### 5. Levantar Servicios con Docker (Elasticsearch y ChromaDB)
 Para que el sistema funcione completamente, necesitas dos servicios externos.
@@ -137,7 +152,6 @@ uvicorn src.main:app --reload
 ```
 
 - Accede a la documentación interactiva en: `http://localhost:8000/docs`
-- Endpoints disponibles: búsqueda semántica, híbrida, etc.
 
 ### Interfaz visual en desarrollo
 
@@ -159,19 +173,20 @@ Además de la API FastAPI, se está construyendo una interfaz visual que correr�
 
 ## 📝 Estado del proyecto
 
-- ✅ Módulo de adquisición de datos (indexación inicial de contenido)
+- ✅ Módulo de adquisición de datos 
 - ✅ Adquisición e indexación en Elasticsearch
 - ✅ Base de datos vectorial con ChromaDB y embeddings Jina
 - ✅ Modelo LMIR (Language Model con suavizado de Dirichlet)
 - ✅ Búsqueda esparcida (Elasticsearch, basada en índice invertido)
 - ✅ Búsqueda densa (ChromaDB, basada en embeddings semánticos)
 - ✅ Búsqueda híbrida con RRF (combinación de esparcida y densa)
-- ✅ Endpoints API
-- ⏳ Módulo RAG (en desarrollo)
-- ⏳ Búsqueda web externa (pendiente de integrar)
+- ✅ API REST con FastAPI
+- ✅ Módulo RAG 
+- ⏳ Búsqueda web externa (pendiente a integrar)
 - ⏳ Módulo de expansión y retroalimentación (en desarrollo)
 - ⏳ Interfaz visual (en desarrollo)
 - ⏳ Módulo de posicionamiento y ranking visual (pendiente)
+- ⏳ Segundo módulo opcional (pendiente)
 
 ## 📝 Notas
 
@@ -179,4 +194,4 @@ Además de la API FastAPI, se está construyendo una interfaz visual que correr�
 - Si encuentras errores, verifica las versiones de dependencias y configuraciones en `.env`.
 - Para soporte, revisa los documentos en `docs/` o abre un issue.
 
-**Última actualización**: Abril 2026
+**Última actualización**: 5/5/2026
