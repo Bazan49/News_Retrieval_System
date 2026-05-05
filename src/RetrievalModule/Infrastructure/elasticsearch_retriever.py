@@ -2,21 +2,9 @@
 ElasticsearchRetriever - Acceso a documentos de Elasticsearch
 """
 
-from typing import List, Optional
-from dataclasses import dataclass
+from typing import List
 from elasticsearch import AsyncElasticsearch
-import asyncio
-from ..Domain.retriever_repository import RetrieverRepository
-
-
-@dataclass
-class DocumentData:
-    doc_id: str
-    url: str
-    title: str
-    content: str
-    source: str
-
+from ..Domain.retriever_repository import RetrieverRepository, DocumentData
 
 class ElasticsearchRetriever(RetrieverRepository):
     """Obtiene documentos de Elasticsearch."""
@@ -36,7 +24,7 @@ class ElasticsearchRetriever(RetrieverRepository):
                 "size": self.fetch_size,
                 "sort": [{"_id": "asc"}],
                 "query": {"match_all": {}},
-                "_source": ["url", "title", "content", "source"]
+                "_source": ["url", "title", "content", "source", "authors", "date"]
             }
             if search_after:
                 query["search_after"] = search_after
@@ -50,11 +38,12 @@ class ElasticsearchRetriever(RetrieverRepository):
             for hit in hits:
                 source = hit.get("_source", {})
                 documents.append(DocumentData(
-                    doc_id=hit["_id"],
                     url=source.get("url", ""),
                     title=source.get("title", ""),
                     content=source.get("content", ""),
-                    source=source.get("source", "")
+                    source=source.get("source", ""),
+                    authors=source.get("authors", []),
+                    date=source.get("date", ""),
                 ))
             
             search_after = hits[-1].get("sort")
@@ -82,7 +71,7 @@ class ElasticsearchRetriever(RetrieverRepository):
                     "minimum_should_match": 1
                 }
             },
-            "_source": ["url", "title", "content", "source"]
+            "_source": ["url", "title", "content", "source", "authors", "date"]
         }
         response = await self.client.search(index=self.index_name, body=body)
         hits = response.get("hits", {}).get("hits", [])
@@ -90,11 +79,12 @@ class ElasticsearchRetriever(RetrieverRepository):
         for hit in hits:
             src = hit["_source"]
             doc = DocumentData(
-                doc_id=hit["_id"],
                 url=src.get("url", ""),
                 title=src.get("title", ""),
                 content=src.get("content", ""),
-                source=src.get("source", "")
+                source=src.get("source", ""),
+                authors=src.get("authors", []),
+                date=src.get("date", ""),
             )
             documents.append(doc)
         return documents

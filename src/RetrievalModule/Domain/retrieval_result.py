@@ -1,38 +1,29 @@
-from dataclasses import dataclass
-from typing import Dict, Any, Optional
-
+from dataclasses import dataclass, field
+from typing import Dict, Any, Optional, List
 
 @dataclass
 class RetrievalResult:
-    """
-    Representa un resultado de búsqueda recuperado.
+    """Representa un resultado de búsqueda recuperado."""
     
-    Attributes:
-        url: URL del documento
-        title: Título del documento
-        content: Contenido o snippet relevante
-        score: Puntuación de relevancia (log P(Q|D))
-        source: Fuente/origen del documento
-        snippet: Fragmento destacado del documento (opcional)
-    """
+    doc_id: str
     url: str
     title: str
     content: str
     score: float
     source: str
     snippet: Optional[str] = None
-    
+    authors: Optional[List[str]] = None   
+    date: Optional[str] = None           
+
     def to_dict(self) -> Dict[str, Any]:
-        """Convierte el resultado a diccionario."""
         return {
+            "doc_id": self.doc_id,
             "url": self.url,
             "title": self.title,
             "content": self.content,
             "score": self.score,
             "source": self.source,
-            "snippet": self.snippet
+            "snippet": self.snippet,
+            "authors": self.authors,
+            "date": self.date
         }
-    
-    def __repr__(self) -> str:
-        return (f"RetrievalResult(url={self.url}, title={self.title[:50]}..., "
-                f"score={self.score:.4f}, source={self.source})")
