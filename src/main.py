@@ -1,13 +1,13 @@
-# main.py (en la raíz del proyecto)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Importa los routers
+# Importar los routers
 from src.API.routers import search
+from src.API.routers import rag
 
 app = FastAPI(
     title="News Retrieval System API",
-    description="Sistema de recuperación de noticias con búsqueda dispersa (LMIR), densa (embeddings) e híbrida (RRF)",
+    description="Sistema de recuperación de noticias.",
     version="1.0.0"
 )
 
@@ -22,6 +22,7 @@ app.add_middleware(
 
 # Incluir routers
 app.include_router(search.router)
+app.include_router(rag.router)
 
 @app.get("/")
 async def root():
