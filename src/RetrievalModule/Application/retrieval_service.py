@@ -1,11 +1,9 @@
-from typing import Any, Dict, List
-
+from typing import List
 from src.RetrievalModule.Application.lmir_retriever import LMIRScoreFunction
 from src.RetrievalModule.Domain.retrieval_result import RetrievalResult
 from src.RetrievalModule.Domain.retriever_repository import RetrieverRepository
 from src.RetrievalModule.Domain.stats_repository import StatsRepository
 from src.RetrievalModule.Domain.query_preprocessor import QueryPreprocessor
-
 
 class RetrievalAppService():
     def __init__(self, repository: RetrieverRepository, stats_repository: StatsRepository, scorer: LMIRScoreFunction, preprocessor: QueryPreprocessor, top_candidates: int = 200):
@@ -26,7 +24,7 @@ class RetrievalAppService():
         self.scorer.load_statistics(doc_term_freqs, doc_lengths, collection_freq)
         self._stats_loaded = True
         
-    async def retrieve(self, query: str, k: int = 10) -> List[Dict[str, Any]]: 
+    async def retrieve(self, query: str, k: int = 10) -> List[RetrievalResult]: 
         await self._ensure_stats_loaded()
         query_tokens = await self.preprocessor.preprocess(query)
         if not query_tokens:
@@ -40,10 +38,11 @@ class RetrievalAppService():
         # Calcular puntuaciones
         scored = []
         for doc in candidates:
-            log_prob = self.scorer.compute_log_p_query_given_doc(query_tokens, doc.doc_id)
+            log_prob = self.scorer.compute_log_p_query_given_doc(query_tokens, doc.url)
             score = log_prob if log_prob != float('-inf') else -1e9
             scored.append((doc, score))
 
+        # Ordenar por puntuación
         scored.sort(key=lambda x: x[1], reverse=True)
         
         # Normalizar scores para mejor legibilidad
@@ -57,13 +56,16 @@ class RetrievalAppService():
             normalized_score = 100 * (score - min_score) / score_range if score_range > 0 else 0
             snippet = doc.content[:200] + "..." if len(doc.content) > 200 else doc.content
             results.append(RetrievalResult(
+                doc_id=doc.url,  # Usar la URL como ID del documento
                 url=doc.url,
                 title=doc.title,
                 content=doc.content,
                 score=normalized_score,  # Score normalizado
                 source=doc.source,
-                snippet=snippet
-            ).to_dict())
+                snippet=snippet,
+                authors=doc.authors,                   
+                date=doc.date if doc.date else None 
+            ))
         return results
 
     async def get_stats(self) -> dict:
