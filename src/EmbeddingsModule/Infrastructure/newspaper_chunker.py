@@ -1,6 +1,6 @@
 from typing import List, Tuple
 from transformers import AutoTokenizer
-from src.DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
+from src.DataAcquisitionModule.scrapedDocument import ScrapedDocument
 from ..Domain.chunker import Chunker
 from ..Domain.document_chunk import Chunk, ChunkMetadata
 from nltk.tokenize import sent_tokenize

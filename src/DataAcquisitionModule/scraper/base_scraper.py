@@ -3,9 +3,8 @@ import unicodedata
 from urllib.parse import urlparse, urlunparse
 from bs4 import BeautifulSoup
 from newspaper import Article
-from src.DataAcquisitionModule.Domain.Entities import scrapedDocument
-from src.DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
-from src.DataAcquisitionModule.Domain.Interfaces.scraper import IScraper
+from src.DataAcquisitionModule.scrapedDocument import ScrapedDocument
+from src.DataAcquisitionModule.scraper.scraper import IScraper
 
 class BaseScraper(IScraper):
 
@@ -13,7 +12,7 @@ class BaseScraper(IScraper):
     """Neswpapr3k es una librería robusta que maneja la mayoría de los casos de scraping, 
     pero esta clase puede ser extendida para casos específicos."""
 
-    def extract(self, url, html) -> scrapedDocument:
+    def extract(self, url, html) -> ScrapedDocument:
 
         source = self.get_source(url)
         article = self.build_article(url, html)

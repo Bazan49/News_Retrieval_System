@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 SCRIPT COMPLETO DE PRUEBA DEL SISTEMA SRI
 
@@ -25,15 +24,11 @@ from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Any
 
-# Configurar path
-ROOT = Path(__file__).resolve().parent
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
+# Asegura que el paquete `src/` esté en el path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from DI.continer import SearchContainer
-from DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
-
+from src.DI.continer import SearchContainer
+from src.DataAcquisitionModule.scrapedDocument import ScrapedDocument
 
 class SRITester:
     """Clase para probar el sistema SRI completo."""

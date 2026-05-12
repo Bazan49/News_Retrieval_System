@@ -13,7 +13,7 @@ from datetime import datetime
 # Asegura que el paquete `src/` esté en el path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
+from src.DataAcquisitionModule.scrapedDocument import ScrapedDocument
 from src.DI.embeddings_container import EmbeddingsContainer
 
 async def main():
