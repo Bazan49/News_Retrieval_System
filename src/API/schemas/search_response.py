@@ -14,8 +14,3 @@ class SearchResultItem(BaseModel):
 class SearchResponseSchema(BaseModel):
     query: str
     results: List[SearchResultItem]
-
-class RAGResponseSchema(BaseModel):
-    query: str
-    answer: str
-    sources: List[SearchResultItem]
