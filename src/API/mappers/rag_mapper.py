@@ -1,5 +1,5 @@
 from src.RAG_Module.Domain.rag_result import RAGResult
-from src.API.schemas.search_response import RAGResponseSchema
+from src.API.schemas.rag_response import RAGResponseSchema
 from src.API.mappers.search_mapper import map_to_search_result_item
 
 def map_to_rag_response(rag_result: RAGResult) -> RAGResponseSchema:

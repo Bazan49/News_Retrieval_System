@@ -21,8 +21,8 @@ class VectorSearcher:
             # Obtener autores y fecha de metadatos (ajusta las claves según tu almacenamiento)
             authors = raw['metadatas'][idx].get('authors')
             date_str = raw['metadatas'][idx].get('date') or raw['metadatas'][idx].get('publication_date')
-            # Convertir distancia a score (similitud aproximada)
-            score = 1 - (raw['distances'][idx] / 2) if raw['distances'] else None
+            # Obtener score 
+            score = raw['distances'][idx] if raw['distances'] else None
             result = RetrievalResult(
                 doc_id=doc_id,
                 url=raw['metadatas'][idx].get('doc_id', ''),

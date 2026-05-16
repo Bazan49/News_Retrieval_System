@@ -1,4 +1,4 @@
-from src.DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
+from src.DataAcquisitionModule.scrapedDocument import ScrapedDocument
 from src.IndexModule.Domain.search_document import SearchDocument
 
 class DefaultDocumentProcessor:

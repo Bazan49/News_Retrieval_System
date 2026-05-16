@@ -1,5 +1,5 @@
 from typing import List
-from src.DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
+from src.DataAcquisitionModule.scrapedDocument import ScrapedDocument
 from src.IndexModule.Domain.document_processor import DefaultDocumentProcessor
 from src.IndexModule.Domain.index_repository import IndexRepository
 

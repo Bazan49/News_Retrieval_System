@@ -8,7 +8,7 @@ from datetime import datetime
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.DI.continer import SearchContainer
-from src.DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
+from src.DataAcquisitionModule.scrapedDocument import ScrapedDocument
 
 container = SearchContainer()
 container.wire(modules=[__name__])

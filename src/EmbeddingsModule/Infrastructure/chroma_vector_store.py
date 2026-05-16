@@ -15,12 +15,15 @@ class ChromaVectorStore(BaseVectorStore):
     async def _ensure_client(self):
         if self.client is None:
             self.client = await chromadb.AsyncHttpClient(host=self.host, port=self.port)
-            # Obtener o crear la colección de forma asíncrona
             try:
                 self.collection = await self.client.get_collection(name=self.collection_name)
             except Exception:
-                self.collection = await self.client.create_collection(name=self.collection_name)
-
+                # Crear colección con métrica coseno
+                self.collection = await self.client.create_collection(
+                    name=self.collection_name,
+                    metadata={"hnsw:space": "cosine"}
+            )
+                
     async def add(
         self,
         ids: List[str],
