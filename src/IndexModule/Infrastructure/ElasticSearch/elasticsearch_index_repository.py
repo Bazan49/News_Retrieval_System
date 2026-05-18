@@ -37,7 +37,7 @@ class ElasticsearchIndexRepository(IndexRepository):
         document = {k: v for k, v in doc.__dict__.items() if v is not None}
         await self.client.index(
             index=self.index_name,
-            id=doc.url,
+            id=doc.chunk_id,
             document=document
         )
     
@@ -46,7 +46,7 @@ class ElasticsearchIndexRepository(IndexRepository):
         actions = [
             {
                 "_index": self.index_name,
-                "_id": doc.url,
+                "_id": doc.chunk_id,
                 "_source": {k: v for k, v in doc.__dict__.items() if v is not None}
             }
             for doc in docs

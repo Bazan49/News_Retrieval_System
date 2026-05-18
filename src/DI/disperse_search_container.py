@@ -1,6 +1,6 @@
 from dependency_injector import containers, providers
 from src.IndexModule.Application.index_service import IndexService
-from src.IndexModule.Domain.document_processor import DefaultDocumentProcessor
+from src.IndexModule.Domain.document_processor import ChunkDocumentProcessor
 from src.IndexModule.Infrastructure.ElasticSearch.elasticsearch_index_repository import ElasticsearchIndexRepository
 from src.IndexModule.Infrastructure.ElasticSearch.elasticsearch_client import ElasticsearchClient
 from src.DI.Config.settings import Settings
@@ -22,7 +22,7 @@ class SearchContainer(containers.DeclarativeContainer):
         verify_certs=False,
     )
 
-    document_processor = providers.Factory(DefaultDocumentProcessor)
+    document_processor = providers.Factory(ChunkDocumentProcessor)
 
     index_repository = providers.Factory(
         ElasticsearchIndexRepository,
@@ -33,7 +33,7 @@ class SearchContainer(containers.DeclarativeContainer):
     index_service = providers.Factory(
         IndexService,
         repository=index_repository,
-        factory=document_processor,
+        chunk_processor=document_processor,
     )
 
     # RetrievalModule dependencies

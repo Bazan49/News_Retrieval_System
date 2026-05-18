@@ -1,16 +1,17 @@
-from src.DataAcquisitionModule.scrapedDocument import ScrapedDocument
 from src.IndexModule.Domain.search_document import SearchDocument
+from src.Common.Chunking.Application.document_chunk import Chunk
 
-class DefaultDocumentProcessor:
-    """Procesador por defecto para ScrapedDocument -> SearchDocument"""
-    
-    def process(self, raw_doc: ScrapedDocument) -> SearchDocument:
+class ChunkDocumentProcessor:
+    """Procesador para convertir Chunk a SearchDocument"""
+    def process(self, chunk: Chunk) -> SearchDocument:
         return SearchDocument(
-            source=raw_doc.source,
-            url=raw_doc.url,
-            title=raw_doc.title or "",
-            content=raw_doc.content or "",
-            authors=raw_doc.authors or [],
-            date=raw_doc.date
+            chunk_id=chunk.chunk_id,
+            url=chunk.metadata.doc_id,
+            source=chunk.metadata.source,
+            title=chunk.metadata.title,
+            content=chunk.content,
+            authors=chunk.metadata.authors,
+            date=chunk.metadata.publication_date, 
+            chunk_number=chunk.metadata.chunk_number,
         )
     

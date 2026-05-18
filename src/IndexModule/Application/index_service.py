@@ -1,24 +1,20 @@
 from typing import List
-from src.DataAcquisitionModule.scrapedDocument import ScrapedDocument
-from src.IndexModule.Domain.document_processor import DefaultDocumentProcessor
+from src.Common.Chunking.Application.document_chunk import Chunk
+from src.IndexModule.Domain.document_processor import ChunkDocumentProcessor
 from src.IndexModule.Domain.index_repository import IndexRepository
 
 class IndexService:
     def __init__(
         self,
         repository: IndexRepository,
-        factory: DefaultDocumentProcessor
+        chunk_processor: ChunkDocumentProcessor
     ):
         self.repository = repository
-        self.factory = factory
-    
-    async def index_scraped_documents(
-        self, 
-        scraped_docs: List['ScrapedDocument']
-    ) -> None:
-        """Orquesta indexación completa"""
+        self.chunk_processor = chunk_processor
+
+    async def index_chunks(self, chunks: List[Chunk]) -> None:
+        """Indexa una lista de chunks en Elasticsearch."""
         await self.repository.ensure_index()
-        
-        search_docs = [self.factory.process(doc) for doc in scraped_docs]
+        search_docs = [self.chunk_processor.process(chunk) for chunk in chunks]
         await self.repository.index_bulk(search_docs)
         await self.repository.refresh()
