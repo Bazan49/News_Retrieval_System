@@ -1,5 +1,5 @@
 from typing import List, Dict, Any
-from src.RetrievalModule.Domain.retrieval_result import RetrievalResult
+from src.Common.RetrievalResult.retrieval_result import RetrievalResult
 from src.EmbeddingsModule.Domain.embedder import BaseEmbedder
 from src.EmbeddingsModule.Domain.vector_store import BaseVectorStore
 
@@ -32,7 +32,8 @@ class VectorSearcher:
                 source=raw['metadatas'][idx].get('source', ''),
                 snippet=snippet,
                 authors=authors,
-                date=date_str
+                date=date_str,
+                chunk_number = raw['metadatas'][idx].get('chunk_number')
             )
             results.append(result)
         return results
