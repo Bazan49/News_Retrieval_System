@@ -2,7 +2,7 @@ from typing import List, Tuple
 from transformers import AutoTokenizer
 from src.DataAcquisitionModule.scrapedDocument import ScrapedDocument
 from ..Domain.chunker import Chunker
-from ..Domain.document_chunk import Chunk, ChunkMetadata
+from ..Application.document_chunk import Chunk, ChunkMetadata
 from nltk.tokenize import sent_tokenize
 
 class NewspaperChunker(Chunker):
@@ -11,6 +11,7 @@ class NewspaperChunker(Chunker):
         self.overlap_percent = overlap_percent
         self.overlap = int(max_tokens * overlap_percent / 100)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        self.tokenizer.model_max_length = 8192
 
     def chunk(self, document: ScrapedDocument) -> List[Chunk]:
         content = f"{document.title}\n\n{document.content}"
@@ -69,9 +70,9 @@ class NewspaperChunker(Chunker):
             estimated_tokens=actual_tokens
         )
         return Chunk(
-            id=f"{document.url}_{chunk_metadata.chunk_number}",
+            chunk_id=f"{document.url}_{chunk_metadata.chunk_number}",
             content=chunk_text,
-            metadata=chunk_metadata.to_dict()
+            metadata=chunk_metadata
         )
 
     def _split_long_sentence(self, sentence: str, total_tokens: int, max_tokens: int) -> List[Tuple[str, int]]:

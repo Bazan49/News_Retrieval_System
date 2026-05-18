@@ -27,6 +27,6 @@ class ChunkMetadata:
 @dataclass
 class Chunk:
     """Unidad de chunk procesada."""
-    id: str
+    chunk_id: str
     content: str
     metadata: ChunkMetadata

@@ -4,11 +4,13 @@ from typing import List, Optional
 
 @dataclass
 class SearchDocument:
-    """Documento limpio para indexación (sin estado interno del pipeline)"""
-    source: str
+    """Documento limpio para indexación"""
+    chunk_id: str
     url: str
+    source: str
     title: str
     content: str
     authors: Optional[List[str]]
     date: Optional[datetime]
+    chunk_number: str
 

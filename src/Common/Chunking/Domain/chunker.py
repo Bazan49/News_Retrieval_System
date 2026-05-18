@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List
-from .document_chunk import Chunk
+from ..Application.document_chunk import Chunk
 from src.DataAcquisitionModule.scrapedDocument import ScrapedDocument
 
 class Chunker(ABC):
