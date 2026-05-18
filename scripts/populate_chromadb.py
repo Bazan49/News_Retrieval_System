@@ -1,6 +1,6 @@
 """
-Poblar ChromaDB con los embeddings de los documentos del corpus.
-Lee desde el archivo JSONL, crea ScrapedDocuments y usa VectorIndexer asíncrono.
+Poblar ChromaDB con los embeddings de los chunks generados a partir del corpus.
+Lee desde el archivo JSONL, crea ScrapedDocuments, genera chunks y los indexa.
 """
 
 import sys
@@ -15,22 +15,24 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.DataAcquisitionModule.scrapedDocument import ScrapedDocument
 from src.DI.embeddings_container import EmbeddingsContainer
+from src.DI.chunking_container import ChunkingContainer
 
 async def main():
-
     print("🚀 Iniciando población de ChromaDB...")
 
-    # Crear contenedor 
-    container = EmbeddingsContainer()
+    # Contenedores
+    embeddings_container = EmbeddingsContainer()
+    chunking_container = ChunkingContainer()
 
-    # Obtener indexador asíncrono
+    # Servicios
     try:
-        indexer = container.vector_indexer()
-        print("✅ Container y VectorIndexer creados")
+        indexer = embeddings_container.vector_indexer()
+        chunking_service = chunking_container.chunking_service()
+        print("✅ Container, VectorIndexer y ChunkingService creados")
     except Exception as e:
-        print(f"❌ Error creando container: {e}")
+        print(f"❌ Error creando servicios: {e}")
         return
-    
+
     # Ruta al archivo JSONL
     jsonl_path = Path("data") / "initial_corpus.jsonl"
     if not jsonl_path.exists():
@@ -80,10 +82,15 @@ async def main():
         scraped_docs = scraped_docs[:N]
         print(f"📄 Limitando a {N} documentos para prueba rápida")
 
-    # Indexar (asíncrono)
+    # Generar chunks a partir de los documentos
+    print("🔄 Generando chunks...")
+    all_chunks = chunking_service.chunk_documents(scraped_docs)
+    print(f"📦 Se generaron {len(all_chunks)} chunks")
+
+    # Indexar en ChromaDB
     try:
         start = time.perf_counter()
-        total_chunks = await indexer.index(scraped_docs)
+        total_chunks = await indexer.index_chunks(all_chunks)
         elapsed = time.perf_counter() - start
         print(f"✅ Indexación completada. {total_chunks} chunks en {elapsed:.2f} segundos")
     except Exception as e:
