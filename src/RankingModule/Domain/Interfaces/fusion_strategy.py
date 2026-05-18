@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List
-from src.RetrievalModule.Domain.retrieval_result import RetrievalResult
+from src.Common.RetrievalResult.retrieval_result import RetrievalResult
 from src.RankingModule.Domain.Entities.hybrid_search_result import HybridSearchResult
 
 class FusionStrategy(ABC):

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from typing import List
 from src.API.mappers.search_mapper import map_to_search_result_list
-from src.RetrievalModule.Domain.retrieval_result import RetrievalResult
+from src.Common.RetrievalResult.retrieval_result import RetrievalResult
 from src.API.schemas.search_response import SearchResponseSchema
 from src.API.dependencies import get_sparse_service, get_dense_service
 from src.API.schemas.search_request import SearchQueryParams
