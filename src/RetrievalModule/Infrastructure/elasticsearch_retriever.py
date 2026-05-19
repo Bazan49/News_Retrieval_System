@@ -53,25 +53,14 @@ class ElasticsearchRetriever(RetrieverRepository):
         return documents
     
     async def get_candidate_documents(self, query_tokens: List[str], top_n: int = 200) -> List[DocumentData]:
-        """
-        Busca documentos candidatos que contengan al menos uno de los términos de la consulta.
-        """
-        # Construir una consulta bool con should para cada término
-        should_clauses = [
-            {"match": {"content": token}} for token in query_tokens
-        ]
+        should_clauses = [{"match": {"content": token}} for token in query_tokens]
         if not should_clauses:
             return []
 
         body = {
             "size": top_n,
-            "query": {
-                "bool": {
-                    "should": should_clauses,
-                    "minimum_should_match": 1
-                }
-            },
-            "_source": ["url", "title", "content", "source", "authors", "date"]
+            "query": {"bool": {"should": should_clauses, "minimum_should_match": 1}},
+            "_source": ["chunk_id", "url", "title", "content", "source", "authors", "date", "chunk_number"]
         }
         response = await self.client.search(index=self.index_name, body=body)
         hits = response.get("hits", {}).get("hits", [])
@@ -79,17 +68,16 @@ class ElasticsearchRetriever(RetrieverRepository):
         for hit in hits:
             src = hit["_source"]
             doc = DocumentData(
+                chunk_id=src.get("chunk_id", ""),
                 url=src.get("url", ""),
                 title=src.get("title", ""),
                 content=src.get("content", ""),
                 source=src.get("source", ""),
                 authors=src.get("authors", []),
                 date=src.get("date", ""),
+                chunk_number=src.get("chunk_number", 0)
             )
             documents.append(doc)
         return documents
     
-    async def count(self) -> int:
-        """Cuenta documentos en el índice."""
-        response = await self.client.count(index=self.index_name)
-        return response.get("count", 0)
+    
