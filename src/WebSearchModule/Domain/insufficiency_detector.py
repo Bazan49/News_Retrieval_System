@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
-
+from src.RetrievalModule.Domain.retrieval_result import RetrievalResult
 
 class InsufficientResultsDetector(ABC):
     """
@@ -12,7 +12,7 @@ class InsufficientResultsDetector(ABC):
     async def is_insufficient(
         self, 
         query: str, 
-        retrieved_results: List[Dict[str, Any]],
+        retrieved_results: List[RetrievalResult],
         threshold: float = 0.5
     ) -> bool:
         """
