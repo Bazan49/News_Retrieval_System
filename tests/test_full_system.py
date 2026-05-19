@@ -25,14 +25,21 @@ from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Any
 
-# Configurar path
-ROOT = Path(__file__).resolve().parent
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
 
-from DI.continer import SearchContainer
-from DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
+# Asegura que el paquete `src/` esté en el path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from src.DI.continer import SearchContainer
+from src.DataAcquisitionModule.Domain.Entities.scrapedDocument import ScrapedDocument
+from src.DI.web_search_container import WebSearchContainer
+from src.RAG_Module.Infrastructure.groq_generator import GroqGenerator
+from src.RAG_Module.Application.rag_service import RAGService
+from src.RetrievalModule.Application.hybrid_retrieval_service import HybridRetrievalAppService
+from src.DI.continer import SearchContainer      
+from src.DI.embeddings_container import EmbeddingsContainer 
+from src.DI.web_search_container import WebSearchContainer 
+from src.WebSearchModule.Application.web_search_service import WebSearchService
+from dependency_injector import containers, providers
 
 
 class SRITester:
@@ -44,6 +51,9 @@ class SRITester:
         self.index_service = None
         self.retrieval_service = None
         self.web_search_service = None
+        self._search_continer = None
+        self._web_search_continer = None
+        
 
     async def setup(self):
         """Configura el contenedor y servicios."""
@@ -51,14 +61,24 @@ class SRITester:
         print("=" * 60)
 
         try:
-            # Inicializar contenedor
-            self.container = SearchContainer()
-            self.container.wire(modules=[__name__])
+            self._search_continer = SearchContainer()
+            self._web_search_continer = WebSearchContainer()
+            
+            self._web_search_continer.config.from_value(self._search_continer.settings())
+            self._web_search_continer.web_search_service.override(
+                providers.Factory(
+                    WebSearchService,
+                    web_search_repo=self._web_search_continer.web_search_fetcher,
+                    insufficiency_detector=self._web_search_continer.insufficiency_detector,
+                    document_processor=self._web_search_continer.document_processor,
+                    index_repository=self._search_continer.index_repository   # ← aquí inyectas el repositorio concreto
+                )
+            )
 
             # Obtener servicios
-            self.index_service = self.container.index_service()
-            self.retrieval_service = self.container.retrieval_service()
-            self.web_search_service = self.container.web_search_service()
+            self.index_service = self._search_continer.index_service()
+            self.retrieval_service = self._search_continer.retrieval_service()
+            self.web_search_service = self._web_search_continer.web_search_service()
 
             print("✅ Servicios inicializados correctamente")
             if self.verbose:
@@ -208,9 +228,9 @@ class SRITester:
                 # Mostrar algunos resultados
                 print("\n📄 RESULTADOS COMBINADOS:")
                 for i, res in enumerate(result['combined_results'][:5], 1):
-                    source = res.get('source', 'Desconocida')
-                    title = res.get('title', 'Sin título')[:50]
-                    score = res.get('score', 0)
+                    source = res.source
+                    title = res.title
+                    score = res.score
                     print(f"   {i}. [{source}] {title}... (score: {score:.2f})")
 
                 return result
@@ -218,8 +238,8 @@ class SRITester:
                 print("\n📊 RESULTADOS LOCALES:")
                 print(f"   Total: {len(local_results)}")
                 for i, res in enumerate(local_results[:5], 1):
-                    title = res.get('title', 'Sin título')[:50]
-                    score = res.get('score', 0)
+                    title = res.title
+                    score = res.score
                     print(f"   {i}. {title}... (score: {score:.2f})")
 
                 return {"local_results": local_results, "web_results": [], "combined_results": local_results}

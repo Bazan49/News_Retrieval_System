@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # Importar los routers
 from src.API.routers import search
 from src.API.routers import rag
-
+from src.API.routers import web_search
 app = FastAPI(
     title="News Retrieval System API",
     description="Sistema de recuperación de noticias.",
@@ -23,6 +23,7 @@ app.add_middleware(
 # Incluir routers
 app.include_router(search.router)
 app.include_router(rag.router)
+app.include_router(web_search.router)
 
 @app.get("/")
 async def root():

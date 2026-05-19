@@ -41,11 +41,11 @@ class WebSearchService:
     async def search_with_fallback(
         self,
         query: str,
-        local_results: List[Dict[str, Any]],
+        local_results: List[RetrievalResult],
         web_results_limit: int = 5,
         insufficiency_threshold: float = 0.5,
         store_web_results: bool = True
-    ) -> Dict[str, Any]:
+    ) -> List[RetrievalResult]:
         """
         Ejecuta búsqueda local y activa búsqueda web si es necesario.
         
@@ -85,6 +85,7 @@ class WebSearchService:
             # 3. Convertir resultados web a RetrievalResult
             web_results = [
                 RetrievalResult(
+                    doc_id = entity.link,  # Usar URL como ID único
                     url=entity.link,
                     title=entity.title,
                     content=entity.summary,
@@ -138,7 +139,7 @@ class WebSearchService:
             await self.index_repository.refresh()
         except Exception as e:
             print(f"Error storing web results: {e}")
-    
+
     def _combine_results(
         self, 
         local_results: List[Dict[str, Any]], 
@@ -164,7 +165,7 @@ class WebSearchService:
         
         # Agregar resultados locales
         for result in local_results:
-            url = result.get("url", "")
+            url = result.url
             if url:
                 seen_urls.add(url)
                 combined.append(result)
