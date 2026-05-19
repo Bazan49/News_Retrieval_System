@@ -15,6 +15,7 @@ class RetrievalResult:
     authors: Optional[List[str]] = None   
     date: Optional[str] = None
     chunk_number: Optional[int] = None   
+    estimated_tokens: Optional[int] = None
     def to_dict(self) -> Dict[str, Any]:
         return {
             "doc_id": self.doc_id,
@@ -26,5 +27,6 @@ class RetrievalResult:
             "snippet": self.snippet,
             "authors": self.authors,
             "date": self.date,
-            "chunk_number": self.chunk_number
+            "chunk_number": self.chunk_number,
+            "estimated_tokens": self.estimated_tokens
         }
