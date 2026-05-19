@@ -33,3 +33,10 @@ class VectorIndexer:
     async def _process_batch(self, ids: List[str], texts: List[str], metadatas: List[Dict[str, Any]]) -> None:
         embeddings = await self.embedder.encode(texts)
         await self.vector_store.add(ids=ids, embeddings=embeddings, documents=texts, metadata=metadatas)
+
+    
+    async def delete_chunks(self, chunk_ids: List[str]) -> None:
+        """Elimina chunks de ChromaDB por sus IDs."""
+        if not chunk_ids:
+            return
+        await self.vector_store.delete(chunk_ids)
