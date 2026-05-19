@@ -1,5 +1,5 @@
 from typing import List
-from src.RetrievalModule.Domain.retrieval_result import RetrievalResult
+from src.Common.RetrievalResult.retrieval_result import RetrievalResult
 from src.API.schemas.search_response import SearchResultItem
 
 def map_to_search_result_item(result: RetrievalResult) -> SearchResultItem:

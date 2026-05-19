@@ -1,5 +1,5 @@
 from typing import List, Dict, Any
-from src.RetrievalModule.Domain.retrieval_result import RetrievalResult
+from src.Common.RetrievalResult.retrieval_result import RetrievalResult
 from src.EmbeddingsModule.Domain.embedder import BaseEmbedder
 from src.EmbeddingsModule.Domain.vector_store import BaseVectorStore
 
@@ -21,8 +21,8 @@ class VectorSearcher:
             # Obtener autores y fecha de metadatos (ajusta las claves según tu almacenamiento)
             authors = raw['metadatas'][idx].get('authors')
             date_str = raw['metadatas'][idx].get('date') or raw['metadatas'][idx].get('publication_date')
-            # Convertir distancia a score (similitud aproximada)
-            score = 1 - (raw['distances'][idx] / 2) if raw['distances'] else None
+            # Obtener score 
+            score = raw['distances'][idx] if raw['distances'] else None
             result = RetrievalResult(
                 doc_id=doc_id,
                 url=raw['metadatas'][idx].get('doc_id', ''),
@@ -32,7 +32,8 @@ class VectorSearcher:
                 source=raw['metadatas'][idx].get('source', ''),
                 snippet=snippet,
                 authors=authors,
-                date=date_str
+                date=date_str,
+                chunk_number = raw['metadatas'][idx].get('chunk_number')
             )
             results.append(result)
         return results

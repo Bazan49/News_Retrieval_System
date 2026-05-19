@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from src.RAG_Module.Application.rag_service import RAGService
-from src.API.schemas.search_response import RAGResponseSchema
+from src.API.schemas.rag_response import RAGResponseSchema
 from src.API.mappers.rag_mapper import map_to_rag_response
 from src.API.schemas.search_request import SearchQueryParams
 from ..dependencies import get_rag_service

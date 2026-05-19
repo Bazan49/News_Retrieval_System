@@ -3,7 +3,7 @@ from src.WebSearchModule.Domain.web_search_repository import WebSearchRepository
 from src.WebSearchModule.Domain.insufficiency_detector import InsufficientResultsDetector
 from src.WebSearchModule.Infrastructure.web_search_document_processor import WebSearchDocumentProcessor
 from src.IndexModule.Domain.index_repository import IndexRepository
-from src.RetrievalModule.Domain.retrieval_result import RetrievalResult
+from src.Common.RetrievalResult.retrieval_result import RetrievalResult
 
 
 class WebSearchService:

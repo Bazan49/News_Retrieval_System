@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 SCRIPT COMPLETO DE PRUEBA DEL SISTEMA SRI
 
@@ -40,7 +39,11 @@ from src.DI.embeddings_container import EmbeddingsContainer
 from src.DI.web_search_container import WebSearchContainer 
 from src.WebSearchModule.Application.web_search_service import WebSearchService
 from dependency_injector import containers, providers
+# Asegura que el paquete `src/` esté en el path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from src.DI.continer import SearchContainer
+from src.DataAcquisitionModule.scrapedDocument import ScrapedDocument
 
 class SRITester:
     """Clase para probar el sistema SRI completo."""

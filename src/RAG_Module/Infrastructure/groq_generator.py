@@ -2,7 +2,7 @@ from typing import List
 from groq import AsyncGroq
 from dotenv import load_dotenv
 from ..Domain.generator import BaseGenerator
-from src.RetrievalModule.Domain.retrieval_result import RetrievalResult
+from src.Common.RetrievalResult.retrieval_result import RetrievalResult
 
 load_dotenv() # Carga las variables de entorno de tu archivo .env
 

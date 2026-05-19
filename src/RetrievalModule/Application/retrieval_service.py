@@ -1,6 +1,6 @@
 from typing import List
 from src.RetrievalModule.Application.lmir_retriever import LMIRScoreFunction
-from src.RetrievalModule.Domain.retrieval_result import RetrievalResult
+from src.Common.RetrievalResult.retrieval_result import RetrievalResult
 from src.RetrievalModule.Domain.retriever_repository import RetrieverRepository
 from src.RetrievalModule.Domain.stats_repository import StatsRepository
 from src.RetrievalModule.Domain.query_preprocessor import QueryPreprocessor
