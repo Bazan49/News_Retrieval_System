@@ -24,47 +24,48 @@ class RetrievalAppService():
         self.scorer.load_statistics(doc_term_freqs, doc_lengths, collection_freq)
         self._stats_loaded = True
         
-    async def retrieve(self, query: str, k: int = 10) -> List[RetrievalResult]: 
+    async def retrieve(self, query: str, k: int = 10) -> List[RetrievalResult]:
         await self._ensure_stats_loaded()
         query_tokens = await self.preprocessor.preprocess(query)
         if not query_tokens:
             return []
 
-        # Obtener candidatos
+        # Obtener chunks candidatos (cada uno es un DocumentData)
         candidates = await self.repository.get_candidate_documents(query_tokens, self.top_candidates)
         if not candidates:
             return []
 
-        # Calcular puntuaciones
+        # Calcular puntuación LMIR para cada chunk
         scored = []
-        for doc in candidates:
-            log_prob = self.scorer.compute_log_p_query_given_doc(query_tokens, doc.url)
+        for chunk in candidates:
+            log_prob = self.scorer.compute_log_p_query_given_doc(query_tokens, chunk.chunk_id)  # Nota: usa chunk_id
             score = log_prob if log_prob != float('-inf') else -1e9
-            scored.append((doc, score))
+            scored.append((chunk, score))
 
-        # Ordenar por puntuación
+        # Ordenar y tomar top k
         scored.sort(key=lambda x: x[1], reverse=True)
-        
-        # Normalizar scores para mejor legibilidad
-        max_score = scored[0][1] if scored else 0
-        min_score = scored[-1][1] if scored else 0
+        top_chunks = scored[:k]
+
+        # Normalizar scores (opcional)
+        max_score = top_chunks[0][1] if top_chunks else 0
+        min_score = top_chunks[-1][1] if top_chunks else 0
         score_range = max_score - min_score if max_score != min_score else 1
-        
+
         results = []
-        for doc, score in scored[:k]:
-            # Normalizar a 0-100
+        for chunk, score in top_chunks:
             normalized_score = 100 * (score - min_score) / score_range if score_range > 0 else 0
-            snippet = doc.content[:200] + "..." if len(doc.content) > 200 else doc.content
+            # El snippet puede ser el contenido truncado o el contenido completo
+            snippet = chunk.content[:200] + "..." if len(chunk.content) > 200 else chunk.content
             results.append(RetrievalResult(
-                doc_id=doc.url,  # Usar la URL como ID del documento
-                url=doc.url,
-                title=doc.title,
-                content=doc.content,
-                score=normalized_score,  # Score normalizado
-                source=doc.source,
+                doc_id=chunk.chunk_id,        # ID único del chunk
+                url=chunk.url,                # Documento padre
+                title=chunk.title,
+                content=chunk.content,        # Contenido completo del chunk
+                score=normalized_score,
+                source=chunk.source,
                 snippet=snippet,
-                authors=doc.authors,                   
-                date=doc.date if doc.date else None 
+                authors=chunk.authors,
+                date=chunk.date if chunk.date else None
             ))
         return results
 

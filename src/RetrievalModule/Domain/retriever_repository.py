@@ -4,12 +4,15 @@ from typing import List, Optional
 
 @dataclass
 class DocumentData:
+    chunk_id: str
     url: str
     title: str
     content: str
     source: str
     authors: Optional[List[str]]
     date: Optional[str]
+    chunk_number: int = 0             # Número de orden dentro del documento
+
     
 class RetrieverRepository(ABC):
     """
