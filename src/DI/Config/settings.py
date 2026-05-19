@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     elasticsearch_hosts: list[str] = ["https://localhost:9200"]
     elasticsearch_username: str = "elastic"
     elasticsearch_password: str = "TU_PASSWORD"
-    index_name: str = "scraped-docs"
+    index_name: str = "news-chunks"
     
     # ChromaDB
     chroma_host: str = "localhost"
@@ -19,8 +19,12 @@ class Settings(BaseSettings):
     embedding_backend: Optional[str] = None 
 
     # Chunking
-    chunker_max_tokens: int = 1024
+    chunker_max_tokens: int = 512
     overlap_percent: int = 15
+
+    # WebSearchModule 
+    google_news_lang: str = "es-419"
+    google_news_country: str = "US"
 
     # RAG
     groq_api_key: Optional[str] = None
