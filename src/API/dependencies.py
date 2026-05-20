@@ -1,3 +1,4 @@
+from src.DI.rag_container import RAGContainer
 from src.DI.web_search_container import WebSearchContainer
 from src.DI.orchestration_container import OrchestrationContainer
 from src.DI.ranking_container import RankingContainer
@@ -10,7 +11,8 @@ _embeddings_container = EmbeddingsContainer()
 _ranking_container = RankingContainer()
 _orchestration_container = OrchestrationContainer()
 _web_container = WebSearchContainer()
-_persistence_container = ChunkingContainer()  # Contenedor de persistencia de chunks
+_persistence_container = ChunkingContainer()  
+_rag_container = RAGContainer()
 
 # Inyectar las dependencias en el contenedor de búsqueda web 
 _web_container.override_providers(
@@ -58,9 +60,4 @@ def get_web_search_for_test():
     return _web_container.web_search()
 
 def get_rag_service():
-    # retriever = get_hybrid_service()
-    # # Usamos el generador de Groq con el modelo que recomendamos
-    # generator = GroqGenerator(model_id="llama-3.3-70b-versatile")
-    # return RAGService(retriever, generator)     
-    pass
-
+    return _rag_container.rag_service()

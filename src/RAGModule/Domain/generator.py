@@ -4,6 +4,6 @@ from src.Common.RetrievalResult.retrieval_result import RetrievalResult
 
 class BaseGenerator(ABC):
     @abstractmethod
-    async def generate(self, query: str, documents: List[RetrievalResult]) -> str:
-        """Genera respuesta basada en la consulta y los documentos recuperados."""
+    async def generate(self, system_prompt: str, user_prompt: str) -> str:
+        """Genera respuesta basada en el prompt del sistema y el prompt del usuario."""
         pass

@@ -17,7 +17,6 @@ class Settings(BaseSettings):
     embedding_model: str = "jinaai/jina-embeddings-v2-base-es"
     model_max_seq_len: int = 8192
     embedding_backend: Optional[str] = None 
-
     # Chunking
     chunker_max_tokens: int = 512
     overlap_percent: int = 15
@@ -26,8 +25,18 @@ class Settings(BaseSettings):
     google_news_lang: str = "es-419"
     google_news_country: str = "US"
 
-    # RAG
+    # RAG - Groq
     groq_api_key: Optional[str] = None
+    groq_model_id: str = "llama-3.3-70b-versatile"
+    groq_temperature: float = 0.3
+    groq_max_tokens: int = 700
+    groq_frequency_penalty: float = 0.5
+    groq_presence_penalty: float = 0.3
+    groq_top_p: float = 0.95
+    
+    # RAG - ContextBuilder
+    rag_max_chunks: int = 10
+    rag_max_chunks_per_doc: int = 2
     
     class Config:
         env_file = ".env"
