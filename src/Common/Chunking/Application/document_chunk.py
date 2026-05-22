@@ -14,15 +14,18 @@ class ChunkMetadata:
     estimated_tokens: int = 0
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            "doc_id": self.doc_id,  # ID del documento original (URL)
+        result = {
+            "doc_id": self.doc_id,
             "source": self.source,
             "title": self.title,
-            "publication_date": self.publication_date.isoformat() if self.publication_date else None,
-            "authors": self.authors if self.authors else [],
+            "authors": self.authors if self.authors else ["Unknown"],
             "chunk_number": self.chunk_number,
             "estimated_tokens": self.estimated_tokens,
         }
+        # Solo agregar publication_date si existe 
+        if self.publication_date:
+            result["publication_date"] = self.publication_date.isoformat()
+        return result
 
 @dataclass
 class Chunk:
