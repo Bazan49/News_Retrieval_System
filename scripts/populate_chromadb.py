@@ -77,7 +77,7 @@ async def main():
 
     print(f"📄 Cargados {len(scraped_docs)} documentos desde JSONL")
 
-    N = 10  # Cambia a 0 para procesar todos
+    N = 0  # Cambia a N > 0 para procesar solo una parte de los documentos
     if N > 0:
         scraped_docs = scraped_docs[:N]
         print(f"📄 Limitando a {N} documentos para prueba rápida")
