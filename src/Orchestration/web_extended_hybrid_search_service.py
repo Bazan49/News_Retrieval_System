@@ -1,10 +1,13 @@
 import asyncio
-from typing import List
+from typing import Any, Dict, List, Tuple
 from src.RankingModule.Domain.Entities.hybrid_search_result import HybridSearchResult
 from src.WebSearchModule.Application.use_cases.web_search_use_case import WebSearch
 from src.Common.Chunking.Application.persistence_service import ChunkPersistenceService
 from src.WebSearchModule.Domain.insufficiency_detector import InsufficientResultsDetector
 from ..RankingModule.Application.hybrid_search import FusionService  
+from src.DI.Config.settings import Settings
+from .fallback_helpers import filter_good_results, is_local_insufficient, merge_unique
+
 
 class WebFallbackHybridSearchService:
     """
@@ -27,36 +30,38 @@ class WebFallbackHybridSearchService:
         web_search: WebSearch,
         chunk_persistence: ChunkPersistenceService,
         insufficiency_detector: InsufficientResultsDetector,
+        settings: Settings = None
     ):
         self.fusion_service = fusion_service
         self.web_search = web_search
         self.chunk_persistence = chunk_persistence
         self.insufficiency_detector = insufficiency_detector
+        self.settings = settings or Settings()
+        self.good_rrf_threshold = getattr(self.settings, 'good_rrf_threshold', 0.01)
+        self.min_content_length = getattr(self.settings, 'min_content_length', 50)
 
+    
     async def search(self, query: str, k: int = 10) -> List[HybridSearchResult]:
-        # 1. Resultados locales (ya fusionados)
         local_results = await self.fusion_service.hybrid_search(query, k=200)
+        print(f"Total resultados locales: {len(local_results)}")
 
-        # 2. Evaluar suficiencia (usando el detector)
-        # MEDINA LLAMA AQUI AL DETECTOR PARA EVALUAR SI LOS RESULTADOS LOCALES SON SUFICIENTES
-        is_insufficient = True
+        good_local = filter_good_results(local_results, self.good_rrf_threshold, self.min_content_length)
+        print(f"Resultados 'buenos' locales: {len(good_local)}")
+
+        # CORRECCIÓN: pasar len(good_local), no local_results
+        is_insufficient, web_needed = is_local_insufficient(len(good_local), k)
+        print(f"¿Insuficiente? {is_insufficient}, web_needed: {web_needed}")
 
         if not is_insufficient:
-            return local_results[:k]
-        
-        #DEL DETECTOR RETORNA LA CANTIDAD DE RESULTADOS A BUSCAR EN LA WEB, HAY Q HACER UN 
-        #ANALISIS SEGUN LO Q SE TIENE
-        web_max_results = 2  # Número máximo de resultados web a recuperar
+            return good_local[:k]
 
-        # 3. Búsqueda web
-        web_hybrids, web_chunks = await self.web_search.fetch_web_results(query, max_results=web_max_results)
-
-        # 4. Indexar chunks web en segundo plano
+        # Búsqueda web
+        web_hybrids, web_chunks = await self.web_search.fetch_web_results(query, max_results=web_needed)
         if web_chunks:
             asyncio.create_task(self._safe_store_chunks(web_chunks))
 
-        # 5. Combinar 
-        return self._merge_unique(local_results, web_hybrids)[:k + len(web_hybrids)]
+        merged = self._merge_unique(good_local, web_hybrids)
+        return merged[:k]
 
     async def _safe_store_chunks(self, chunks):
         try:
