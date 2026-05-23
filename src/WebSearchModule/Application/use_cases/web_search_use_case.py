@@ -16,42 +16,52 @@ class WebSearch:
         raw_results = await self.web_search_repo.search(query, max_results=max_results)
         all_hybrids = []
         all_chunks = []
-        semaphore = asyncio.Semaphore(5)  # máximo 5 tareas simultáneas
+        semaphore = asyncio.Semaphore(5)
 
         async def process_one(raw):
             async with semaphore:
-                real_url = self._clean_google_url(raw.link)
-                doc = await self.scraping_service.scrape_url(real_url)
-                if not doc:
-                    return [], []
-                chunks = self.chunking_service.chunk_document(doc)
-                hybrids = []
-                for chunk in chunks:
-                    retrieval = RetrievalResult(
-                        doc_id=chunk.chunk_id,
-                        url=doc.url,
-                        title=doc.title,
-                        content=chunk.content,
-                        score=0.0,
-                        source=doc.source,
-                        snippet=chunk.content[:200] + "...",
-                        authors=doc.authors,
-                        date=doc.date.isoformat() if doc.date else None,
-                        chunk_number=chunk.metadata.chunk_number,
-                        estimated_tokens=chunk.metadata.estimated_tokens
-                    )
-                    hybrid = HybridSearchResult(
-                        retrieval_result=retrieval,
-                        rrf_score=0.0,
-                        source_type=ResultSource.WEB
-                    )
-                    hybrids.append(hybrid)
-                return hybrids, chunks
+                try:
+                    real_url = self._clean_google_url(raw.link)
+                    doc = await self.scraping_service.scrape_url(real_url)
+                    if not doc:
+                        return [], []
+                    chunks = self.chunking_service.chunk_document(doc)
+                    hybrids = []
+                    for chunk in chunks:
+                        retrieval = RetrievalResult(
+                            doc_id=chunk.chunk_id,
+                            url=doc.url,
+                            title=doc.title,
+                            content=chunk.content,
+                            score=0.0,
+                            source=doc.source,
+                            snippet=chunk.content[:200] + "...",
+                            authors=doc.authors,
+                            date=doc.date.isoformat() if doc.date else None,
+                            chunk_number=chunk.metadata.chunk_number,
+                            estimated_tokens=chunk.metadata.estimated_tokens
+                        )
+                        hybrid = HybridSearchResult(
+                            retrieval_result=retrieval,
+                            rrf_score=0.0,
+                            source_type=ResultSource.WEB
+                        )
+                        hybrids.append(hybrid)
+                    return hybrids, chunks
+                except Exception as e:
+                    print(f"⚠️ Error procesando {raw.link}: {e}")
+                    return [], []  # Retorna vacío sin romper el flujo
 
         tasks = [process_one(raw) for raw in raw_results]
-        results = await asyncio.gather(*tasks)
+        # return_exceptions=True por si acaso (doble seguridad)
+        results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        for hybrids, chunks in results:
+        for result in results:
+            if isinstance(result, Exception):
+                # Esto no debería ocurrir porque capturamos dentro, pero por si acaso
+                print(f"Excepción no capturada: {result}")
+                continue
+            hybrids, chunks = result
             all_hybrids.extend(hybrids)
             all_chunks.extend(chunks)
 
