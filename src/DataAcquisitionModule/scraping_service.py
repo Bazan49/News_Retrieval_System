@@ -1,6 +1,6 @@
 import asyncio
 from typing import Optional
-from src.DataAcquisitionModule.scraper.scraper_factory import ScraperFactory
+from src.DataAcquisitionModule.Scraper.scraper_factory import ScraperFactory
 from src.DataAcquisitionModule.network.fetcher import Fetcher
 from src.DataAcquisitionModule.scrapedDocument import ScrapedDocument
 
