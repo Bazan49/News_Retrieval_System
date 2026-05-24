@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     # RAG - ContextBuilder
     rag_max_chunks: int = 10
     rag_max_chunks_per_doc: int = 2
+
+    #Refinement
+    refinement_model_name: str = "all-MiniLM-L6-v2"
+    refinement_top_n: int = 5
     
     class Config:
         env_file = ".env"
