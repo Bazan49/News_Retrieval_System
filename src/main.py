@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Importar los routers
+from src.API.routers import feedback
 from src.API.routers import web_search
 from src.API.routers import search
 from src.API.routers import rag
@@ -30,6 +31,7 @@ app.include_router(search.router)
 app.include_router(rag.router)
 app.include_router(hybrid_search.router)
 app.include_router(web_search.router)
+app.include_router(feedback.router) 
 
 @app.get("/")
 async def root():

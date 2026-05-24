@@ -1,3 +1,4 @@
+from src.DI.feedback_container import FeedbackContainer
 from src.DI.rag_container import RAGContainer
 from src.DI.web_search_container import WebSearchContainer
 from src.DI.orchestration_container import OrchestrationContainer
@@ -13,6 +14,7 @@ _orchestration_container = OrchestrationContainer()
 _web_container = WebSearchContainer()
 _persistence_container = ChunkingContainer()  
 _rag_container = RAGContainer()
+_feedback_container = FeedbackContainer()
 
 # Inyectar las dependencias en el contenedor de búsqueda web 
 _web_container.override_providers(
@@ -61,3 +63,10 @@ def get_web_search_for_test():
 
 def get_rag_service():
     return _rag_container.rag_service()
+
+def get_feedback_service():
+    return _feedback_container.feedback_service()
+
+def get_refinement_service():
+    
+    return _feedback_container.refinement_service()
