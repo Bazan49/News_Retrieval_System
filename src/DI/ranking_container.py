@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from dependency_injector import containers, providers
+from src.Common.Similarity.similarity_service import SimilarityService
 from src.DI.feedback_container import FeedbackContainer
 from src.RankingModule.Infrastructure.feedback_ranking_strategy import FeedbackRankingStrategy
 from src.RankingModule.Application.hybrid_search import FusionService
@@ -12,6 +13,11 @@ class RankingContainer(containers.DeclarativeContainer):
     sparse_service = providers.Dependency()
     dense_searcher = providers.Dependency()
 
+    similarity_service = providers.Factory(
+        SimilarityService,
+        model=FeedbackContainer.refinement_service.provided.model
+    )
+
     # Estrategia de fusión 
     fusion_strategy = providers.Singleton(RRFFusionStrategy, rrf_k=60)
 
@@ -19,6 +25,7 @@ class RankingContainer(containers.DeclarativeContainer):
         FeedbackRankingStrategy,
         feedback_repo=FeedbackContainer.feedback_repository,
         refinement_service=FeedbackContainer.refinement_service,
+        similarity_service=similarity_service,
         boost_factor=0.3,
         penalty_factor=0.5,
         recency_weight=0.2,

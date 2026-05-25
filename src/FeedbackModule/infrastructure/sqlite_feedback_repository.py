@@ -74,3 +74,41 @@ class SQLiteFeedbackRepository:
                     timestamp=datetime.fromisoformat(r[5])
                 ) for r in rows
             ]
+        
+    async def get_all_positive(self, limit: int = 500) -> List[Feedback]:
+        await self._init_db()
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute("""
+                SELECT query, chunk_id, chunk_content, rating, user_id, timestamp
+                FROM feedback
+                WHERE rating = 1
+                ORDER BY id DESC
+                LIMIT ?
+            """, (limit,))
+            rows = await cursor.fetchall()
+            return [
+                Feedback(
+                    query=r[0], chunk_id=r[1], chunk_content=r[2],
+                    rating=bool(r[3]), user_id=r[4],
+                    timestamp=datetime.fromisoformat(r[5])
+                ) for r in rows
+            ]
+
+    async def get_all_negative(self, limit: int = 500) -> List[Feedback]:
+        await self._init_db()
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute("""
+                SELECT query, chunk_id, chunk_content, rating, user_id, timestamp
+                FROM feedback
+                WHERE rating = 1
+                ORDER BY id DESC
+                LIMIT ?
+            """, (limit,))
+            rows = await cursor.fetchall()
+            return [
+                Feedback(
+                    query=r[0], chunk_id=r[1], chunk_content=r[2],
+                    rating=bool(r[3]), user_id=r[4],
+                    timestamp=datetime.fromisoformat(r[5])
+                ) for r in rows
+            ]

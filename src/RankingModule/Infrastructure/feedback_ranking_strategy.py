@@ -1,28 +1,32 @@
 import math
 from datetime import datetime
-from typing import List
+from typing import List,Dict
 from src.RankingModule.Domain.Interfaces.ranking_strategy import RankingStrategy
 from src.RankingModule.Domain.Entities.hybrid_search_result import HybridSearchResult
 from src.FeedbackModule.infrastructure.sqlite_feedback_repository import SQLiteFeedbackRepository
 from src.FeedbackModule.application.refinement_service import RefinementService
+from src.Common.Similarity.similarity_service import SimilarityService
 
 class FeedbackRankingStrategy(RankingStrategy):
     def __init__(
         self,
         feedback_repo: SQLiteFeedbackRepository,
         refinement_service: RefinementService,
+        similarity_service: SimilarityService,
         boost_factor: float = 0.3,        # +30% por like
         penalty_factor: float = 0.5,      # -50% por dislike
         recency_weight: float=0.5,        # peso de la frescura
         recency_decay_days: int = 30,     # días para que la frescura decaiga a la mitad
+        similarity_threshold: float = 0.6,
         current_date: datetime = None
     ):
         self.feedback_repo = feedback_repo
-        self.refinement_service = refinement_service
+        self.similarity_service = similarity_service
         self.boost_factor = boost_factor
         self.penalty_factor = penalty_factor
         self.recency_weight = recency_weight
         self.recency_decay_days = recency_decay_days
+        self.similarity_threshold = similarity_threshold
         self.current_date = current_date or datetime.now()
 
     async def rerank(self, results: List[HybridSearchResult]) -> List[HybridSearchResult]:
@@ -36,14 +40,30 @@ class FeedbackRankingStrategy(RankingStrategy):
         if not results:
             return results
 
-        # Obtener feedbacks (pueden ser vacíos)
-        pos_feedbacks = await self.feedback_repo.get_positive_by_similar_query(query, limit=30)
-        neg_feedbacks = await self.feedback_repo.get_negative_by_similar_query(query, limit=30)
-        boost_map = {fb.chunk_id: self.boost_factor for fb in pos_feedbacks}
-        penalty_map = {fb.chunk_id: self.penalty_factor for fb in neg_feedbacks}
+        # 1. Obtener todos los feedbacks positivos y negativos (sin filtro textual)
+        pos_feedbacks = await self.feedback_repo.get_all_positive(limit=500)
+        neg_feedbacks = await self.feedback_repo.get_all_negative(limit=500)
 
+        # 2. Calcular similitud semántica entre la consulta actual y cada feedback
+        boost_map: Dict[str, float] = {}
+        penalty_map: Dict[str, float] = {}
+
+        # Procesar feedbacks positivos
+        for fb in pos_feedbacks:
+            sim = self.similarity_service.calculate_similarity(query, fb.query)
+            if sim >= self.similarity_threshold:
+                chunk_id = fb.chunk_id
+                boost_map[chunk_id] = boost_map.get(chunk_id, 0) + self.boost_factor
+
+        # Procesar feedbacks negativos
+        for fb in neg_feedbacks:
+            sim = self.similarity_service.calculate_similarity(query, fb.query)
+            if sim >= self.similarity_threshold:
+                chunk_id = fb.chunk_id
+                penalty_map[chunk_id] = penalty_map.get(chunk_id, 0) + self.penalty_factor
+
+        # 3. Aplicar ajustes a cada resultado
         for res in results:
-            # Partir del rrf_score original
             score = res.rrf_score
             chunk_id = res.retrieval_result.doc_id
 
