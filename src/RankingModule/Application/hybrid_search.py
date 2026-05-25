@@ -1,5 +1,7 @@
 import asyncio
-from typing import List
+from typing import List, Optional
+from src.RankingModule.Domain.Interfaces import fusion_strategy
+from src.RankingModule.Domain.Interfaces.ranking_strategy import RankingStrategy
 from src.RetrievalModule.Application.retrieval_service import RetrievalAppService
 from src.EmbeddingsModule.Application.vector_searcher_usecase import VectorSearcher
 from src.RankingModule.Domain.Interfaces.fusion_strategy import FusionStrategy
@@ -14,11 +16,13 @@ class FusionService:
         self,
         sparse_service: RetrievalAppService,
         dense_searcher: VectorSearcher,
-        fusion_strategy: FusionStrategy
+        fusion_strategy: FusionStrategy,
+        ranking_strategy: Optional[RankingStrategy] = None,
     ):
         self.sparse_service = sparse_service
         self.dense_searcher = dense_searcher
         self.fusion_strategy = fusion_strategy
+        self.ranking_strategy = ranking_strategy
 
     async def hybrid_search(
         self,
@@ -32,4 +36,9 @@ class FusionService:
 
         # Fusionar usando la estrategia inyectada
         fused = await self.fusion_strategy.merge(sparse_results, dense_results)
+        
+        # Aplicar re-ranking si está configurado
+        if self.ranking_strategy:
+            fused = await self.ranking_strategy.rerank_with_query(query, fused)
+        
         return fused

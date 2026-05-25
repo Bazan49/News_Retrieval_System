@@ -17,7 +17,8 @@ def map_hybrid_to_schema(hybrid: HybridSearchResult) -> HybridSearchResultSchema
         dense_score=hybrid.dense_score,
         sparse_rank=hybrid.sparse_rank,
         dense_rank=hybrid.dense_rank,
-        source_type=hybrid.source_type
+        source_type=hybrid.source_type,
+        final_score=hybrid.final_score
     )
 
 def map_hybrid_list_to_response(query: str, hybrids: List[HybridSearchResult]) -> HybridSearchResponseSchema:

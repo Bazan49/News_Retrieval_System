@@ -11,6 +11,7 @@ class ResultSource(Enum):
 class HybridSearchResult:
     retrieval_result: RetrievalResult
     rrf_score: float
+    final_score: Optional[float] = None
     sparse_score: Optional[float] = None
     dense_score: Optional[float] = None
     sparse_rank: Optional[int] = None   
