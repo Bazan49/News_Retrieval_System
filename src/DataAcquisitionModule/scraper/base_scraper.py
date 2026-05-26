@@ -4,7 +4,7 @@ from urllib.parse import urlparse, urlunparse
 from bs4 import BeautifulSoup
 from newspaper import Article
 from src.DataAcquisitionModule.scrapedDocument import ScrapedDocument
-from src.DataAcquisitionModule.Scraper.scraper import IScraper
+from src.DataAcquisitionModule.scraper.scraper import IScraper
 
 class BaseScraper(IScraper):
 
