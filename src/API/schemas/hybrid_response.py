@@ -19,6 +19,7 @@ class HybridSearchResultSchema(BaseModel):
     sparse_rank: Optional[int] = None
     dense_rank: Optional[int] = None
     source_type: ResultSource   # "local" o "web"
+    final_score: Optional[float] = None  # puntuación final después de reranking
 
 class HybridSearchResponseSchema(BaseModel):
     query: str

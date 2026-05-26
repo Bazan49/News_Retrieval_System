@@ -38,11 +38,16 @@ class Settings(BaseSettings):
     rag_max_chunks: int = 10
     rag_max_chunks_per_doc: int = 2
 
+
     # Umbral para considerar un resultado local como "bueno" (RRF score)
     good_rrf_threshold: float = 0.01
     
     # Umbral mínimo de longitud de contenido para considerar un resultado válido
     min_content_length: int = 50
+
+    #Refinement
+    refinement_model_name: str = "all-MiniLM-L6-v2"
+    refinement_top_n: int = 5
     
     class Config:
         env_file = ".env"
