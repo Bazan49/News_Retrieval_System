@@ -8,6 +8,7 @@ class SQLiteFeedbackRepository:
         self.db_path = db_path
 
     async def _init_db(self):
+        
         async with aiosqlite.connect(self.db_path) as db:
             # Tabla principal
             await db.execute("""
@@ -100,10 +101,49 @@ class SQLiteFeedbackRepository:
             cursor = await db.execute("""
                 SELECT query, chunk_id, chunk_content, rating, user_id, timestamp
                 FROM feedback
-                WHERE rating = 1
+                WHERE rating = 0
                 ORDER BY id DESC
                 LIMIT ?
             """, (limit,))
+            rows = await cursor.fetchall()
+            return [
+                Feedback(
+                    query=r[0], chunk_id=r[1], chunk_content=r[2],
+                    rating=bool(r[3]), user_id=r[4],
+                    timestamp=datetime.fromisoformat(r[5])
+                ) for r in rows
+            ]
+
+    async def get_all(self, limit: int = 1000) -> List[Feedback]:
+        """Obtiene todos los feedbacks (sin filtrar por rating)."""
+        await self._init_db()
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute("""
+                SELECT query, chunk_id, chunk_content, rating, user_id, timestamp
+                FROM feedback
+                ORDER BY id DESC
+                LIMIT ?
+            """, (limit,))
+            rows = await cursor.fetchall()
+            return [
+                Feedback(
+                    query=r[0], chunk_id=r[1], chunk_content=r[2],
+                    rating=bool(r[3]), user_id=r[4],
+                    timestamp=datetime.fromisoformat(r[5])
+                ) for r in rows
+            ]
+    
+    async def get_by_user_id(self, user_id: str, limit: int = 500) -> List[Feedback]:
+        """Obtiene feedbacks de un usuario específico (likes y dislikes)."""
+        await self._init_db()
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute("""
+                SELECT query, chunk_id, chunk_content, rating, user_id, timestamp
+                FROM feedback
+                WHERE user_id = ?
+                ORDER BY id DESC
+                LIMIT ?
+            """, (user_id, limit))
             rows = await cursor.fetchall()
             return [
                 Feedback(
