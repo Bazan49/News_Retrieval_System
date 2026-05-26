@@ -6,6 +6,9 @@ from src.DI.ranking_container import RankingContainer
 from src.DI.disperse_search_container import SearchContainer      
 from src.DI.embeddings_container import EmbeddingsContainer 
 from src.DI.chunking_container import ChunkingContainer
+from src.DI.recommendation_container import RecommendationContainer
+from src.RankingModule.Infrastructure.personalized_ranking_strategy import PersonalizedRankingStrategy
+from dependency_injector import providers
 
 _search_container = SearchContainer()
 _embeddings_container = EmbeddingsContainer()
@@ -15,6 +18,7 @@ _web_container = WebSearchContainer()
 _persistence_container = ChunkingContainer()  
 _rag_container = RAGContainer()
 _feedback_container = FeedbackContainer()
+_recommendation_container = RecommendationContainer()
 
 # Inyectar las dependencias en el contenedor de búsqueda web 
 _web_container.override_providers(
@@ -40,6 +44,21 @@ _orchestration_container.override_providers(
     chunk_persistence=_persistence_container.chunk_persistence,
     insufficiency_detector=_web_container.insufficiency_detector
 )
+
+_recommendation_container.feedback_repo.override(_feedback_container.feedback_repository)
+_recommendation_container.embedder.override(_embeddings_container.embedder)
+_recommendation_container.vector_searcher.override(_embeddings_container.vector_searcher)
+
+# Inyectar las dependencias en el contenedor de ranking
+_ranking_container.override_providers(
+    sparse_service=_search_container.retrieval_service,
+    dense_searcher=_embeddings_container.vector_searcher,
+)
+
+# Inyectar las dependencias que necesita PersonalizedRankingStrategy
+_ranking_container.profile_builder.override(_recommendation_container.profile_builder)
+_ranking_container.embedder.override(_embeddings_container.embedder)
+
 
 def get_sparse_service():
     """Retorna el servicio de búsqueda dispersa (LMIR + Elasticsearch)"""
@@ -67,6 +86,11 @@ def get_rag_service():
 def get_feedback_service():
     return _feedback_container.feedback_service()
 
-def get_refinement_service():
-    
+def get_refinement_service():    
     return _feedback_container.refinement_service()
+
+def get_recommender():
+    return _recommendation_container.content_recommender()
+
+def get_search_history_repo():
+    return _recommendation_container.search_history_repo()
