@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from src.RankingModule.Domain.Entities.hybrid_search_result import HybridSearchResult
 from src.WebSearchModule.Application.use_cases.web_search_use_case import WebSearch
 from src.Common.Chunking.Application.persistence_service import ChunkPersistenceService
@@ -41,8 +41,8 @@ class WebFallbackHybridSearchService:
         self.min_content_length = getattr(self.settings, 'min_content_length', 50)
 
     
-    async def search(self, query: str, k: int = 10) -> List[HybridSearchResult]:
-        local_results = await self.fusion_service.hybrid_search(query, k=200)
+    async def search(self, query: str, k: int = 10, user_id: Optional[str] = None) -> List[HybridSearchResult]:
+        local_results = await self.fusion_service.hybrid_search(query, k=200, user_id=user_id)
         print(f"Total resultados locales: {len(local_results)}")
 
         good_local = filter_good_results(local_results, self.good_rrf_threshold, self.min_content_length)
