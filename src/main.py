@@ -7,6 +7,7 @@ from src.API.routers import web_search
 from src.API.routers import search
 from src.API.routers import rag
 from src.API.routers import hybrid_search
+from src.API.routers import recommendation
 from src.API.middleware.timing_middleware import TimingMiddleware
 
 app = FastAPI(
@@ -32,6 +33,7 @@ app.include_router(rag.router)
 app.include_router(hybrid_search.router)
 app.include_router(web_search.router)
 app.include_router(feedback.router) 
+app.include_router(recommendation.router)
 
 @app.get("/")
 async def root():
