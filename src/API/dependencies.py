@@ -9,6 +9,7 @@ from src.DI.chunking_container import ChunkingContainer
 from src.DI.recommendation_container import RecommendationContainer
 from src.RankingModule.Infrastructure.personalized_ranking_strategy import PersonalizedRankingStrategy
 from dependency_injector import providers
+from src.DI.auth_container import AuthContainer
 
 _search_container = SearchContainer()
 _embeddings_container = EmbeddingsContainer()
@@ -19,6 +20,7 @@ _persistence_container = ChunkingContainer()
 _rag_container = RAGContainer()
 _feedback_container = FeedbackContainer()
 _recommendation_container = RecommendationContainer()
+_auth_container = AuthContainer()
 
 # Inyectar las dependencias en el contenedor de búsqueda web 
 _web_container.override_providers(
@@ -98,3 +100,9 @@ def get_recommender():
 
 def get_search_history_repo():
     return _recommendation_container.search_history_repo()
+
+def get_auth_service():
+    return _auth_container.auth_service()
+
+def get_user_repository():
+    return _auth_container.user_repository()
