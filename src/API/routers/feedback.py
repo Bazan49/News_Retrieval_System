@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from src.API.schemas.feedback import FeedbackRequest, RefineRequest, RefineResponse
 from src.API.mappers.feedback_mapper import map_refinement_result_to_response
 from src.FeedbackModule.application.feedback_service import FeedbackService
@@ -15,14 +15,15 @@ async def add_feedback(req: FeedbackRequest, service: FeedbackService = Depends(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/refine", response_model=RefineResponse)
-async def refine_search(req: RefineRequest,
-                        refinement_service: RefinementService = Depends(get_refinement_service),
-                        search_service = Depends(get_hybrid_service)):
+@router.get("/refine", response_model=RefineResponse)
+async def refine_search(
+    params: RefineRequest = Depends(),
+    refinement_service: RefinementService = Depends(get_refinement_service),
+    search_service = Depends(get_hybrid_service)
+):
     refinement_result = await refinement_service.refine_search(
-        original_query=req.original_query,
-        chunk_content=req.chunk_content,
-        top_n=req.top_n_terms,
+        original_query=params.original_query,
+        chunk_content=params.chunk_content,
         search_service=search_service
     )
     return map_refinement_result_to_response(refinement_result)
