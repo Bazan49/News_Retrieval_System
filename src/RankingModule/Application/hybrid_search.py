@@ -40,11 +40,8 @@ class FusionService:
 
         # Aplicar cada estrategia de ranking en orden
         for strategy in self.ranking_strategies:
-            # Si la estrategia tiene método rerank_with_query (como FeedbackRankingStrategy)
-            if hasattr(strategy, 'rerank_with_query'):
-                fused = await strategy.rerank_with_query(query, fused)
             # Si la estrategia tiene método rerank_with_user (como PersonalizedRankingStrategy)
-            elif hasattr(strategy, 'rerank_with_user') and user_id:
+            if hasattr(strategy, 'rerank_with_user') and user_id:
                 fused = await strategy.rerank_with_user(user_id, fused)
             elif hasattr(strategy, 'rerank'):
                 fused = await strategy.rerank(fused)
