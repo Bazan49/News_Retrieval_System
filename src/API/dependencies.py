@@ -30,6 +30,11 @@ _persistence_container.override_providers(
     vector_indexer=_embeddings_container.vector_indexer,
     index_service=_search_container.index_service
 )
+
+# Inyectar las dependencias en el contenedor de feedback
+_feedback_container.override_providers(
+    embedder=_embeddings_container.embedder
+)
     
 # Inyectar las dependencias en el contenedor de ranking
 _ranking_container.override_providers(
@@ -58,7 +63,6 @@ _ranking_container.override_providers(
 # Inyectar las dependencias que necesita PersonalizedRankingStrategy
 _ranking_container.profile_builder.override(_recommendation_container.profile_builder)
 _ranking_container.embedder.override(_embeddings_container.embedder)
-
 
 def get_sparse_service():
     """Retorna el servicio de búsqueda dispersa (LMIR + Elasticsearch)"""
