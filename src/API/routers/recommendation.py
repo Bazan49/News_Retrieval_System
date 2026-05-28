@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Query
+from src.AuthModule.Application.dependencies import get_current_user_optional
 from src.API.schemas.recommendation_request import RecommendationRequestSchema
 from src.API.dependencies import get_recommender
 from src.API.schemas.recommendation_response import RecommendationResponse
@@ -8,13 +10,25 @@ from src.RecommendationModule.Application.content_based_recommender import Conte
 
 router = APIRouter(prefix="/recommend", tags=["recommendation"])
 
-@router.post("/for-user", response_model=RecommendationResponse)
+@router.get("/for-user", response_model=RecommendationResponse)
 async def recommend_for_user(
-    req: RecommendationRequestSchema, 
+    req: RecommendationRequestSchema = Depends(),   # Toma todos los parámetros de consulta
+    current_user: Optional[str] = Depends(get_current_user_optional),
     recommender: ContentRecommender = Depends(get_recommender)
 ):
-    try:
-        result = await recommender.recommend(req)
-        return map_to_recommendation_response(result.user_id, result.recommended_docs, result.scores)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    # El token tiene prioridad sobre el user_id enviado en la query
+    final_user_id = current_user or req.user_id
+    if not final_user_id:
+        raise HTTPException(status_code=400, detail="User ID required (via token or query parameter)")
+
+    # Crear el objeto de dominio
+    request = RecommendationRequest(
+        user_id=final_user_id,
+        max_results=req.max_results,
+        include_likes=req.include_likes,
+        include_queries=req.include_queries,
+        query_weight=req.query_weight
+    )
+
+    result = await recommender.recommend(request)
+    return map_to_recommendation_response(result.user_id, result.recommended_docs, result.scores)
