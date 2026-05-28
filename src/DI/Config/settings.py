@@ -46,8 +46,11 @@ class Settings(BaseSettings):
     min_content_length: int = 50
 
     #Refinement
-    refinement_model_name: str = "all-MiniLM-L6-v2"
     refinement_top_n: int = 5
+
+    secret_key: str
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
     
     class Config:
         env_file = ".env"
