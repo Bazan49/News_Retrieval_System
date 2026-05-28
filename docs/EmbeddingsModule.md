@@ -1,113 +1,75 @@
-# Módulo de Embeddings: Flujo Completo, Configuración, Ventajas y Desventajas
+# Módulo de Embeddings
 
-## Introducción
+El **Módulo de Embeddings** es el componente encargado de generar representaciones vectoriales (embeddings) de los fragmentos textuales (chunks) y gestionar su almacenamiento y recuperación en una base de datos vectorial. Estas representaciones permiten la **búsqueda semántica**, complementando la búsqueda léxica tradicional al capturar el significado profundo de los textos.
 
-El **Módulo de Embeddings** es un componente clave del sistema de búsqueda e indexación de documentos. Utiliza técnicas de procesamiento de lenguaje natural (NLP) para convertir texto en representaciones vectoriales (embeddings), permitiendo búsquedas semánticas eficientes basadas en similitud de significado en lugar de coincidencias exactas de palabras.
+Se utiliza **ChromaDB** como base de datos vectorial subyacente y el modelo **`jinaai/jina-embeddings-v2-base-es`** para la generación de embeddings.
 
-Este módulo integra varios componentes: chunking de documentos, generación de embeddings, almacenamiento vectorial y búsqueda. Está diseñado para manejar documentos largos dividiéndolos en fragmentos manejables, codificándolos en vectores de alta dimensión y almacenándolos en una base de datos vectorial para consultas rápidas.
+## Arquitectura y componentes principales
 
-## Flujo Completo
+El módulo sigue los principios de **Arquitectura Limpia** (Clean Architecture), garantizando la separación de responsabilidades y la independencia tecnológica:
 
-El flujo de trabajo del módulo sigue una arquitectura limpia (Clean Architecture) con capas de dominio, infraestructura y casos de uso. Aquí va el proceso paso a paso:
+- **Capa de dominio**: Define dos contratos abstractos fundamentales:
+  - `BaseVectorStore`: declara las operaciones de persistencia vectorial (`add`, `search`, `delete`). Es la interfaz que debe implementar cualquier base de datos vectorial (ChromaDB, FAISS, etc.).
+  - `BaseEmbedder`: declara la generación de embeddings (`encode`, `encode_single`, `dim`). Permite abstraer el modelo concreto de embeddings (Jina, Sentence Transformers, etc.).
 
-### 1. **Adquisición de Documentos**
-   - Los documentos se obtienen desde fuentes externas (ej. scrapers de noticias como Cubadebate o TeleMundo).
-   - Cada documento incluye: título, contenido, autor, fecha, URL, etc.
+- **Capa de infraestructura**: Implementa los contratos con tecnologías concretas:
+  - `ChromaVectorStore`: implementa `BaseVectorStore` usando el cliente asíncrono de ChromaDB. Gestiona la colección con espacio de búsqueda `hnsw:space: "cosine"` para usar similitud del coseno.
+  - `SentenceTransformerEmbedder`: implementa `BaseEmbedder` utilizando `sentence-transformers` con el modelo configurado (soporta backend opcional, como ONNX). 
+- **Capa de aplicación**: Alberga los casos de uso que orquestan la lógica del módulo, por ejemplo:
+  - `VectorIndexer`: se encarga de tomar una lista de `Chunk` (provenientes del módulo de segmentación), generar sus embeddings y almacenarlos en la base de datos vectorial. Procesa los chunks en lotes para optimizar el rendimiento.
+  - `VectorSearcher`: implementa la búsqueda semántica. Recibe una consulta textual, la transforma a vector con el embedder y ejecuta la búsqueda por similitud en la base de datos vectorial, devolviendo los resultados más relevantes envueltos en objetos `RetrievalResult`.
+
+La **inyección de dependencias** se gestiona mediante el contenedor `EmbeddingsContainer` construido con la librería **`dependency-injector`**, que registra y resuelve las dependencias del módulo de forma centralizada.
+
+## Modelo de embeddings: `jinaai/jina-embeddings-v2-base-es`
+
+Para la generación de embeddings se ha seleccionado el modelo **`jina-embeddings-v2-base-es`** de Jina AI. Las razones de esta elección están directamente vinculadas a sus características técnicas:
+
+- **Entrenamiento específico para español**: el modelo ha sido entrenado para ofrecer un alto rendimiento en el idioma español (además de soporte para inglés), lo que garantiza una representación semántica de calidad para nuestro corpus de noticias en español, capturando correctamente los matices y expresiones del lenguaje periodístico.
+- **Vectores de 768 dimensiones**: proporciona un equilibrio óptimo entre riqueza semántica y eficiencia computacional. Es lo suficientemente expresivo para capturar matices del lenguaje noticioso, pero no tan grande como para ralentizar las búsquedas por similitud en ChromaDB.
+- **Longitud de secuencia de 8192 tokens**
+
+La generación de embeddings se realiza mediante la librería `sentence-transformers`. Para mejorar el rendimiento, se ha configurado el backend ONNX (variable `EMBEDDING_BACKEND=onnx`), que acelera la inferencia sin pérdida apreciable de precisión.
+
+## Búsqueda por similitud y base de datos vectorial
+
+Hemos configurado ChromaDB para que almacene todos los embeddings generados en una **colección** con el espacio de búsqueda `hnsw:space: "cosine"`. La métrica de similitud empleada es la **similitud del coseno**, que mide el coseno del ángulo entre dos vectores, ignorando su magnitud. Esta métrica es especialmente adecuada para embeddings de texto, ya que captura la orientación semántica de los documentos, reflejando si apuntan en la misma dirección conceptual.
+
+La distancia coseno (que ChromaDB utiliza internamente) se calcula como:
+
+$$
+d = 1.0 - \frac{\sum (A_i \times B_i)}
+{\sqrt{\sum (A_i^2)} \cdot \sqrt{\sum (B_i^2)}}
+$$
+
+### HNSW: índice vectorial para búsqueda aproximada
+
+**HNSW (Hierarchical Navigable Small World)** es el algoritmo de índice vectorial por defecto que utiliza ChromaDB. Se trata de una estructura de datos basada en grafos diseñada para la **búsqueda aproximada del vecino más cercano (ANN)** en espacios vectoriales de alta dimensionalidad.
+
+Un índice HNSW funciona construyendo un grafo de múltiples capas:
+- Cada capa contiene un subconjunto de los puntos de datos.
+- Las capas superiores son más dispersas y actúan como "autopistas" que permiten una navegación rápida a grandes saltos.
+- El algoritmo conecta puntos cercanos en cada capa, creando propiedades de "mundo pequeño" (small-world) que posibilitan una complejidad de búsqueda eficiente.
+
+Durante la búsqueda:
+1. Se comienza en la capa superior y se navega hacia el punto de consulta en el espacio de embeddings.
+2. Se desciende a través de capas sucesivas, refinando la búsqueda en cada nivel.
+3. Finalmente, se alcanzan los vecinos más cercanos en la capa inferior, que contiene todos los puntos.
+
+Gracias a esta estructura jerárquica, la búsqueda de los `k` vectores más similares se realiza con una complejidad logarítmica **O(log n)**, sin necesidad de recorrer todos los vectores del corpus (lo que sería inviable para colecciones grandes).
+
+## Limitaciones y consideraciones
+
+A pesar de las ventajas de la búsqueda semántica, el enfoque actual presenta ciertas limitaciones:
+
+- **Requisitos de hardware**: el modelo `jina-embeddings-v2-base-es` (161 millones de parámetros) funciona correctamente en CPU para volúmenes pequeños, pero la generación de embeddings por lotes puede ser lenta en hardware convencional. Para mayor velocidad se recomienda una GPU. 
+- **Dependencia del modelo**: cambiar el modelo de embeddings (por ejemplo, para mejorar la calidad semántica) implica **reindexar todo el corpus** desde cero, ya que los vectores antiguos no son compatibles.
+- **Dependencias externas**: el módulo descarga los archivos necesarios desde Hugging Face Hub la primera vez que se ejecuta. Esto puede demorar o fallar en dependencia de la conexión a internet.
+
+Estas limitaciones no invalidan la utilidad del módulo, pero deben tenerse en cuenta al planificar el despliegue y el mantenimiento del sistema.
 
 
-### 2. **Chunking (División en Fragmentos)**
-   - **Propósito**: Dividir documentos largos en chunks más pequeños para mejorar la precisión de los embeddings.
-   - **Implementación**: Usa `NewspaperChunker` que divide por párrafos y sub-párrafos si son muy largos.
-   - **Metadata**: Cada chunk incluye metadata como ID del documento, fuente, URL, título, fecha de publicación, tipo de chunk, etc.
-   - **Salida**: Lista de objetos `Chunk` con texto y metadata.
+## Referencias
 
-### 3. **Generación de Embeddings**
-   - **Modelo**: Utiliza `SentenceTransformer` con el modelo `intfloat/multilingual-e5-large` (768 dimensiones).
-   - **Proceso**: Convierte el texto de cada chunk en un vector numérico de 768 dimensiones.
-   - **Normalización**: Los embeddings están normalizados (L2), lo que facilita cálculos de similitud coseno.
-   - **Salida**: Array de NumPy con embeddings para todos los chunks.
-
-### 4. **Almacenamiento Vectorial**
-   - **Base de Datos**: ChromaDB (vectorial persistente).
-   - **Operaciones**:
-     - `add`: Almacena IDs, embeddings, documentos y metadata.
-     - `search`: Realiza búsquedas por similitud usando distancia coseno.
-     - `update` / `delete`: Para modificaciones.
-   - **Persistencia**: Los datos se guardan en `./chroma_db` con SQLite para persistencia.
-
-### 5. **Indexación**
-   - **Caso de Uso**: `VectorIndexer` coordina el flujo completo.
-   - **Proceso**: Toma una lista de `ScrapedDocument`, los chunkiza, genera embeddings y los almacena.
-   - **Salida**: Número total de chunks indexados.
-
-### 6. **Búsqueda**
-   - **Caso de Uso**: `VectorSearcher` maneja consultas.
-   - **Proceso**: Codifica la query en embedding, busca los k vecinos más cercanos en el espacio vectorial.
-   - **Salida**: Diccionario con documentos, metadata, distancias e IDs relevantes.
-
-### 7. **Integración con API (Opcional)**
-   - Exposición vía FastAPI para endpoints de búsqueda.
-   - Documentación automática con Swagger.
-
-## Configuración
-
-### Dependencias
-- **Python**: 3.8+
-- **Librerías**:
-  - `sentence-transformers`: Para embeddings.
-  - `chromadb`: Para almacenamiento vectorial.
-  - `numpy`: Para arrays.
-  - `dependency-injector`: Para inyección de dependencias.
-- **Instalación**: `pip install sentence-transformers chromadb numpy dependency-injector`
-
-### Configuración del Contenedor
-Usa `EmbeddingsContainer` para inyección de dependencias:
-- **Chunker**: `NewspaperChunker` con `max_tokens=400`, `overlap=50`.
-- **Embedder**: `SentenceTransformerEmbedder` con modelo `intfloat/multilingual-e5-large`.
-- **Vector Store**: `ChromaVectorStore` con colección `"test_documents"` y path `./chroma_db`.
-
-### Variables de Entorno
-- `HF_TOKEN`: Para acceso a Hugging Face (opcional, reduce rate limits).
-
-### Ejecución
-- **Indexación**: Ejecuta `test_embeddings.py` para probar el flujo completo.
-- **Búsqueda**: Usa `VectorSearcher` con queries en español o inglés.
-
-## Ventajas
-
-- **Búsqueda Semántica**: Encuentra contenido relevante por significado, no solo palabras clave.
-- **Multilingüe**: Soporte para español, inglés y otros idiomas con e5-large.
-- **Escalabilidad**: ChromaDB maneja miles de documentos eficientemente.
-- **Modularidad**: Arquitectura limpia permite reemplazar componentes (ej. cambiar a FAISS).
-- **Rendimiento**: Embeddings precomputados permiten búsquedas en milisegundos.
-- **Persistencia**: Datos guardados en disco, sobreviven reinicios.
-- **Facilidad de Uso**: APIs simples para indexar y buscar.
-
-## Desventajas
-
-- **Requisitos de Hardware**: Modelo grande (e5-large) requiere GPU para velocidad; en CPU es lento.
-- **Consumo de Memoria**: Embeddings de 768 dims por chunk consumen RAM/disco.
-- **Dependencia de Modelo**: Cambiar modelo requiere re-indexar todo.
-- **Limitaciones de Chunking**: División por párrafos puede no capturar contexto largo.
-- **Latencia Inicial**: Primera carga del modelo toma tiempo.
-- **Complejidad de Configuración**: Requiere ajuste de parámetros (max_tokens, k, etc.).
-- **Dependencias Externas**: Hugging Face puede tener rate limits sin token.
-
-## Ejemplos de Uso
-
-### Indexación
-```python
-container = EmbeddingsContainer()
-indexer = container.vector_indexer()
-total = indexer.index(documents)  # Lista de ScrapedDocument
-print(f"Indexados {total} chunks")
-```
-
-### Búsqueda
-```python
-searcher = container.vector_searcher()
-results = searcher.search("inteligencia artificial", k=5)
-for doc, meta, dist in zip(results['documents'], results['metadatas'], results['distances']):
-    print(f"{meta['title']}: {dist:.4f}")
-```
-
+1. Jina AI. (2023). *jina-embeddings-v2-base-es: A bilingual embedding model for Spanish and English*. Recuperado de https://huggingface.co/jinaai/jina-embeddings-v2-base-es
+2. ChromaDB. (2024). *Chroma: The AI-native open-source embedding database*. Recuperado de https://docs.trychroma.com
