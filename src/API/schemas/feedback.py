@@ -12,7 +12,6 @@ class FeedbackRequest(BaseModel):
 class RefineRequest(BaseModel):
     original_query: str
     chunk_content: str
-    top_n_terms: Optional[int] = 5
 
 class RefineResponse(BaseModel):
     original_query: str

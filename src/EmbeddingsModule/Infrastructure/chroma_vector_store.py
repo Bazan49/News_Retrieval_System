@@ -68,6 +68,13 @@ class ChromaVectorStore(BaseVectorStore):
             "distances": result["distances"][0],
             "embeddings": result.get("embeddings", [[]])[0],
         }
+    
+    async def get_embeddings_by_ids(self, ids: List[str]) -> Dict[str, List[float]]:
+        await self._ensure_client()
+        result = await self.collection.get(ids=ids, include=["embeddings"])
+        if not result or not result["embeddings"]:
+            return {}
+        return {doc_id: emb for doc_id, emb in zip(result["ids"], result["embeddings"])}
 
     async def delete(self, ids: List[str]) -> None:
         await self._ensure_client()

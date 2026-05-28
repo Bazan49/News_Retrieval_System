@@ -10,7 +10,7 @@ class UserProfileBuilder:
         self,
         feedback_repo: SQLiteFeedbackRepository,
         search_history_repo: SQLiteSearchHistoryRepository,
-        embedder: BaseEmbedder,
+        embedder: feedback_repo.em,
         like_weight: float = 1.0,
         dislike_weight: float = -0.5,
         max_queries: int = 20,
