@@ -1,9 +1,10 @@
 import aiosqlite
 from datetime import datetime
 from typing import List, Optional
+from src.FeedbackModule.domain.interfaces.feedback_repository import FeedbackRepository
 from src.FeedbackModule.domain.entities import Feedback
 
-class SQLiteFeedbackRepository:
+class SQLiteFeedbackRepository(FeedbackRepository):
     def __init__(self, db_path: str = "feedback.db"):
         self.db_path = db_path
 
