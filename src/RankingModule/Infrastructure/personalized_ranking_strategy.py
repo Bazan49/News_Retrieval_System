@@ -1,4 +1,6 @@
+import math
 import numpy as np
+from datetime import datetime
 from typing import List, Optional
 from src.RankingModule.Domain.Interfaces.ranking_strategy import RankingStrategy
 from src.RankingModule.Domain.Entities.hybrid_search_result import HybridSearchResult
@@ -10,12 +12,18 @@ class PersonalizedRankingStrategy(RankingStrategy):
         self,
         profile_builder: UserProfileBuilder,
         embedder: BaseEmbedder,
-        personalization_weight: float = 0.4
+        personalization_weight: float = 0.4,
+        recency_weight: float = 0.2,
+        recency_decay_days: int = 30,
+        current_date: Optional[datetime] = None
     ):
         self.profile_builder = profile_builder
         self.embedder = embedder
         self.personalization_weight = personalization_weight
-        self._doc_embedding_cache = {}   # cache: doc_id -> embedding vector
+        self.recency_weight = recency_weight
+        self.recency_decay_days = recency_decay_days
+        self.current_date = current_date or datetime.now()
+        self._doc_embedding_cache = {}
 
     async def _get_doc_embedding(self, doc_id: str, text: str) -> np.ndarray:
         """Obtiene el embedding de un documento, usando caché para evitar recálculos."""
@@ -51,7 +59,7 @@ class PersonalizedRankingStrategy(RankingStrategy):
 
         # Ajustar cada resultado según similitud con el perfil
         for res in results:
-            # Obtener embedding del documento (desde caché o calculado)
+            # Similitud con perfil
             doc_emb = await self._get_doc_embedding(res.doc_id, res.content)
             # Similitud coseno
             sim = np.dot(profile, doc_emb) / (np.linalg.norm(profile) * np.linalg.norm(doc_emb))
@@ -59,6 +67,20 @@ class PersonalizedRankingStrategy(RankingStrategy):
             original_score = res.final_score if res.final_score is not None else res.rrf_score
             # Combinar
             personalized_score = original_score * (1 - self.personalization_weight) + sim * self.personalization_weight
+
+            # Aplicar boost de frescura (si hay fecha)
+            pub_date = res.date
+            if pub_date:
+                try:
+                    if isinstance(pub_date, str):
+                        pub_date = datetime.fromisoformat(pub_date.replace('Z', '+00:00'))
+                    days_ago = (self.current_date - pub_date).days
+                    if days_ago >= 0:
+                        recency_boost = 1 + self.recency_weight * math.exp(-days_ago / self.recency_decay_days)
+                        personalized_score *= recency_boost
+                except Exception:
+                    pass
+
             res.final_score = personalized_score
 
         # Reordenar por final_score

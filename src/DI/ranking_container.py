@@ -21,7 +21,10 @@ class RankingContainer(containers.DeclarativeContainer):
         PersonalizedRankingStrategy,
         profile_builder=profile_builder,
         embedder=embedder,
-        personalization_weight=0.4
+        personalization_weight=0.4,
+        recency_weight=0.2,
+        recency_decay_days=30,
+        current_date=datetime.now()
     )
 
     ranking_strategies = providers.List(
