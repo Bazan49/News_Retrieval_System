@@ -10,7 +10,7 @@ class FeedbackContainer(containers.DeclarativeContainer):
     # Dependencia externa: embedder 
     embedder = providers.Dependency()
     
-    feedback_repository = providers.Singleton(SQLiteFeedbackRepository, db_path="feedback.db")
+    feedback_repository = providers.Singleton(SQLiteFeedbackRepository, db_path=settings.provided.feedback_db_path)
     feedback_service = providers.Factory(FeedbackService, repository=feedback_repository)
     
     refinement_service = providers.Singleton(
