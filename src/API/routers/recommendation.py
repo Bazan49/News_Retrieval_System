@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from src.AuthModule.Application.dependencies import get_current_user_optional
 from src.API.schemas.recommendation_request import RecommendationRequestSchema
 from src.API.dependencies import get_recommender
@@ -31,4 +31,4 @@ async def recommend_for_user(
     )
 
     result = await recommender.recommend(request)
-    return map_to_recommendation_response(result.user_id, result.recommended_docs, result.scores)
+    return map_to_recommendation_response(result.user_id, result.recommended_docs)

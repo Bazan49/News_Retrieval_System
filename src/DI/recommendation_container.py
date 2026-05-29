@@ -1,4 +1,5 @@
 from dependency_injector import containers, providers
+from src.DI.Config.settings import Settings
 from src.FeedbackModule.infrastructure.sqlite_feedback_repository import SQLiteFeedbackRepository
 from src.EmbeddingsModule.Application.vector_searcher_usecase import VectorSearcher
 from src.RecommendationModule.Infrastructure.sqlite_search_history_repository import SQLiteSearchHistoryRepository
@@ -10,7 +11,7 @@ class RecommendationContainer(containers.DeclarativeContainer):
     embedder = providers.Dependency()
     vector_searcher = providers.Dependency()
 
-    search_history_repo = providers.Singleton(SQLiteSearchHistoryRepository, db_path="search_history.db")
+    search_history_repo = providers.Singleton(SQLiteSearchHistoryRepository, db_path=Settings().search_history_db_path)
 
     profile_builder = providers.Factory(
         UserProfileBuilder,

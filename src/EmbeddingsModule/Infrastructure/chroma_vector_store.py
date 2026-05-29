@@ -76,6 +76,13 @@ class ChromaVectorStore(BaseVectorStore):
             return {}
         return {doc_id: emb for doc_id, emb in zip(result["ids"], result["embeddings"])}
 
+    async def get_embedding_by_id(self, doc_id: str) -> Optional[np.ndarray]:
+        """Recupera el embedding de un documento por su ID."""
+        embeddings = await self.get_embeddings_by_ids([doc_id])
+        if doc_id in embeddings:
+            return np.array(embeddings[doc_id])
+        return None
+
     async def delete(self, ids: List[str]) -> None:
         await self._ensure_client()
         await self.collection.delete(ids=ids)

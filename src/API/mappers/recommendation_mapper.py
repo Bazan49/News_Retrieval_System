@@ -15,9 +15,8 @@ def map_retrieval_to_search_item(ret: RetrievalResult) -> SearchResultItem:
         authors=ret.authors or []
     )
 
-def map_to_recommendation_response(user_id: str, docs: List[RetrievalResult], scores: List[float]) -> RecommendationResponse:
+def map_to_recommendation_response(user_id: str, docs: List[RetrievalResult]) -> RecommendationResponse:
     return RecommendationResponse(
         user_id=user_id,
         recommended_docs=[map_retrieval_to_search_item(d) for d in docs],
-        scores=scores
     )
