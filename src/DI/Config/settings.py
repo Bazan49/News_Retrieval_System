@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 from pydantic_settings import BaseSettings
 
@@ -51,6 +52,22 @@ class Settings(BaseSettings):
     secret_key: str
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
+    
+    @property
+    def sqlite_folder(self) -> str:
+        return "sqlite_data"
+
+    @property
+    def feedback_db_path(self) -> str:
+        return os.path.join(self.sqlite_folder, "feedback.db")
+
+    @property
+    def search_history_db_path(self) -> str:
+        return os.path.join(self.sqlite_folder, "search_history.db")
+
+    @property
+    def users_db_path(self) -> str:
+        return os.path.join(self.sqlite_folder, "users.db")
     
     class Config:
         env_file = ".env"
