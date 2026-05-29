@@ -4,13 +4,14 @@ from typing import List, Optional, Dict, Tuple
 from src.FeedbackModule.infrastructure.sqlite_feedback_repository import SQLiteFeedbackRepository
 from src.EmbeddingsModule.Domain.embedder import BaseEmbedder
 from src.RecommendationModule.Infrastructure.sqlite_search_history_repository import SQLiteSearchHistoryRepository
+from src.EmbeddingsModule.Domain.embedder import BaseEmbedder
 
 class UserProfileBuilder:
     def __init__(
         self,
         feedback_repo: SQLiteFeedbackRepository,
         search_history_repo: SQLiteSearchHistoryRepository,
-        embedder: feedback_repo.em,
+        embedder: BaseEmbedder ,
         like_weight: float = 1.0,
         dislike_weight: float = -0.5,
         max_queries: int = 20,
