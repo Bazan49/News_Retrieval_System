@@ -1,3 +1,4 @@
+from pathlib import Path
 import aiosqlite
 from datetime import datetime
 from typing import List, Optional
@@ -7,7 +8,10 @@ from src.FeedbackModule.domain.entities import Feedback
 class SQLiteFeedbackRepository(FeedbackRepository):
     def __init__(self, db_path: str = "feedback.db"):
         self.db_path = db_path
-
+        parent = Path(self.db_path).parent
+        if parent and not parent.exists():
+            parent.mkdir(parents=True, exist_ok=True)
+    
     async def _init_db(self):
         
         async with aiosqlite.connect(self.db_path) as db:
