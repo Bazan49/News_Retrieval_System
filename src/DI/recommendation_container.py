@@ -10,14 +10,17 @@ class RecommendationContainer(containers.DeclarativeContainer):
     feedback_repo = providers.Dependency()
     embedder = providers.Dependency()
     vector_searcher = providers.Dependency()
+    vector_store = providers.Dependency()
 
     search_history_repo = providers.Singleton(SQLiteSearchHistoryRepository, db_path=Settings().search_history_db_path)
+    
 
     profile_builder = providers.Factory(
         UserProfileBuilder,
         feedback_repo=feedback_repo,
         search_history_repo=search_history_repo,
         embedder=embedder,
+        vector_store=vector_store,
         like_weight=1.0,
         dislike_weight=-0.5,
         max_queries=20,
