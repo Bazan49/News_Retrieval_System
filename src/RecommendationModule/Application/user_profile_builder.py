@@ -1,6 +1,7 @@
 import time
 import numpy as np
-from typing import List, Optional, Dict, Tuple
+from typing import Optional, Dict, Tuple
+from src.EmbeddingsModule.Domain.vector_store import BaseVectorStore
 from src.FeedbackModule.domain.interfaces.feedback_repository import FeedbackRepository
 from src.RecommendationModule.Domain.interfaces.search_history_repository import SearchHistoryRepository
 from src.EmbeddingsModule.Domain.embedder import BaseEmbedder
@@ -11,6 +12,7 @@ class UserProfileBuilder:
         feedback_repo: FeedbackRepository,
         search_history_repo: SearchHistoryRepository,
         embedder: BaseEmbedder,
+        vector_store: BaseVectorStore,   # Interfaz para recuperar embeddings de documentos por ID
         like_weight: float = 1.0,
         dislike_weight: float = -0.5,
         max_queries: int = 20,
@@ -19,6 +21,7 @@ class UserProfileBuilder:
         self.feedback_repo = feedback_repo
         self.search_history_repo = search_history_repo
         self.embedder = embedder
+        self.vector_store = vector_store
         self.like_weight = like_weight
         self.dislike_weight = dislike_weight
         self.max_queries = max_queries

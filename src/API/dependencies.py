@@ -7,8 +7,6 @@ from src.DI.disperse_search_container import SearchContainer
 from src.DI.embeddings_container import EmbeddingsContainer 
 from src.DI.chunking_container import ChunkingContainer
 from src.DI.recommendation_container import RecommendationContainer
-from src.RankingModule.Infrastructure.personalized_ranking_strategy import PersonalizedRankingStrategy
-from dependency_injector import providers
 from src.DI.auth_container import AuthContainer
 
 _search_container = SearchContainer()
@@ -52,9 +50,13 @@ _orchestration_container.override_providers(
     insufficiency_detector=_web_container.insufficiency_detector
 )
 
-_recommendation_container.feedback_repo.override(_feedback_container.feedback_repository)
-_recommendation_container.embedder.override(_embeddings_container.embedder)
-_recommendation_container.vector_searcher.override(_embeddings_container.vector_searcher)
+# Inyectar las dependencias en el contenedor de recomendación
+_recommendation_container.override_providers(
+    feedback_repo=_feedback_container.feedback_repository,
+    embedder=_embeddings_container.embedder,
+    vector_searcher=_embeddings_container.vector_searcher,
+    vector_store=_embeddings_container.vector_store
+)
 
 # Inyectar las dependencias en el contenedor de ranking
 _ranking_container.override_providers(
