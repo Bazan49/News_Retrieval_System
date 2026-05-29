@@ -1,6 +1,6 @@
 from typing import List
 from src.Common.Chunking.Application.document_chunk import Chunk
-from IndexModule.Application.document_processor import ChunkDocumentProcessor
+from src.IndexModule.Application.document_processor import ChunkDocumentProcessor
 from src.IndexModule.Domain.index_repository import IndexRepository
 
 class IndexService:
