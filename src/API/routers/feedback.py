@@ -1,6 +1,5 @@
+from fastapi import APIRouter, Depends, HTTPException
 from typing import Optional
-
-from fastapi import APIRouter, Depends, HTTPException, Query
 from src.AuthModule.Application.dependencies import get_current_user_optional
 from src.API.schemas.feedback import FeedbackRequest, RefineRequest, RefineResponse
 from src.API.mappers.feedback_mapper import map_refinement_result_to_response
@@ -18,16 +17,16 @@ async def add_feedback(req: FeedbackRequest, current_user: Optional[str] = Depen
         return {"status": "success", "message": "Feedback guardado"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
-@router.get("/refine", response_model=RefineResponse)
+
+@router.post("/refine", response_model=RefineResponse)
 async def refine_search(
-    params: RefineRequest = Depends(),
+    req: RefineRequest,
     refinement_service: RefinementService = Depends(get_refinement_service),
     search_service = Depends(get_hybrid_service)
 ):
     refinement_result = await refinement_service.refine_search(
-        original_query=params.original_query,
-        chunk_content=params.chunk_content,
+        original_query=req.original_query,
+        chunk_contents=req.get_contents(),
         search_service=search_service
     )
     return map_refinement_result_to_response(refinement_result)

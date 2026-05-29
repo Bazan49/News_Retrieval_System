@@ -11,7 +11,15 @@ class FeedbackRequest(BaseModel):
 
 class RefineRequest(BaseModel):
     original_query: str
-    chunk_content: str
+    chunk_content: Optional[str] = None
+    chunk_contents: Optional[List[str]] = None
+
+    def get_contents(self) -> List[str]:
+        if self.chunk_contents:
+            return self.chunk_contents
+        if self.chunk_content:
+            return [self.chunk_content]
+        return []
 
 class RefineResponse(BaseModel):
     original_query: str
