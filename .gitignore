@@ -1,5 +1,3 @@
-chroma_db/
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -211,3 +209,7 @@ __marimo__/
 # SQLite databases
 *.db
 *.db-journal
+
+# Bases de datos SQLite
+sqlite_data/
+*.db
