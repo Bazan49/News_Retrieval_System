@@ -1,6 +1,6 @@
 from dependency_injector import containers, providers
 from src.IndexModule.Application.index_service import IndexService
-from src.IndexModule.Domain.document_processor import ChunkDocumentProcessor
+from IndexModule.Application.document_processor import ChunkDocumentProcessor
 from src.IndexModule.Infrastructure.ElasticSearch.elasticsearch_index_repository import ElasticsearchIndexRepository
 from src.IndexModule.Infrastructure.ElasticSearch.elasticsearch_client import ElasticsearchClient
 from src.DI.Config.settings import Settings
