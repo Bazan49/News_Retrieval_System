@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     secret_key: str
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
+
+    good_rrf_threshold: float = 0.018
+    min_content_length: int = 100
     
     class Config:
         env_file = ".env"
