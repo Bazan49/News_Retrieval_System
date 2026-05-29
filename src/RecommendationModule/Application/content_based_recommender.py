@@ -45,7 +45,7 @@ class ContentRecommender:
             similarity = 1 - doc.score  # score original es distancia en ChromaDB
             if doc.date:
                 try:
-                    pub_date = datetime.fromisoformat(doc.date.replace('Z', '+00:00'))
+                    pub_date = datetime.fromisoformat(doc.date)
                     days_ago = (current_date - pub_date).days
                     if days_ago >= 0:
                         recency_boost = 1 + self.recency_weight * math.exp(-days_ago / self.recency_decay_days)
@@ -57,10 +57,8 @@ class ContentRecommender:
         # Ordenar por similitud boosteada descendente y truncar
         final_results.sort(key=lambda x: x[1], reverse=True)
         top_docs = [doc for doc, _ in final_results[:request.max_results]]
-        top_scores = [score for _, score in final_results[:request.max_results]]
 
         return RecommendationResult(
             user_id=request.user_id,
-            recommended_docs=top_docs,
-            scores=top_scores
+            recommended_docs=top_docs
         )

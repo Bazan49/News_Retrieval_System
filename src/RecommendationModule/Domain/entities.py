@@ -20,4 +20,3 @@ class RecommendationRequest:
 class RecommendationResult:
     user_id: str
     recommended_docs: List[RetrievalResult]
-    scores: List[float]          # similitud coseno
