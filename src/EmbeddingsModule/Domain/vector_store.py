@@ -32,4 +32,8 @@ class BaseVectorStore(ABC):
     async def delete(self, ids: List[str]) -> None:
         """Elimina vectores por IDs."""
         pass
-    
+
+    @abstractmethod
+    async def get_embedding_by_id(self, doc_id: str) -> Optional[np.ndarray]:
+        """Recupera el embedding de un documento desde el almacén vectorial por su ID."""
+        pass
