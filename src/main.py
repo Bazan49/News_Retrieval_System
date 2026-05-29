@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer
+
+from pathlib import Path
 
 # Importar los routers
 from src.API.routers import feedback
@@ -18,7 +21,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
-from fastapi.security import OAuth2PasswordBearer
+
+# Crear directorio para bases de datos SQLite si no existe
+DB_FOLDER = "sqlite_data"
+Path(DB_FOLDER).mkdir(exist_ok=True)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
