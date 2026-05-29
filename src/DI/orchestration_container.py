@@ -1,7 +1,7 @@
 from dependency_injector import containers, providers
 from src.DI.web_search_container import WebSearchContainer
 from src.DI.Config.settings import Settings
-from src.FeedbackModule.infrastructure.memory_feedback_repository import MemoryFeedbackRepository
+from src.FeedbackModule.infrastructure.sqlite_feedback_repository import SQLiteFeedbackRepository
 from src.FeedbackModule.application.feedback_service import FeedbackService
 from src.FeedbackModule.application.refinement_service import RefinementService
 from src.Orchestration.web_extended_hybrid_search_service import WebFallbackHybridSearchService

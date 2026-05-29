@@ -1,4 +1,4 @@
-from src.DataAcquisitionModule.scraper.base_scraper import BaseScraper
+from src.DataAcquisitionModule.Scraper.base_scraper import BaseScraper
 from bs4 import BeautifulSoup
 import json
 import re

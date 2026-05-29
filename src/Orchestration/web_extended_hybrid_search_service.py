@@ -6,8 +6,6 @@ from src.Common.Chunking.Application.persistence_service import ChunkPersistence
 from src.WebSearchModule.Domain.insufficiency_detector import InsufficientResultsDetector
 from ..RankingModule.Application.hybrid_search import FusionService  
 from src.DI.Config.settings import Settings
-from .fallback_helpers import filter_good_results, is_local_insufficient, merge_unique
-
 
 class WebFallbackHybridSearchService:
     """
@@ -37,19 +35,18 @@ class WebFallbackHybridSearchService:
         self.chunk_persistence = chunk_persistence
         self.insufficiency_detector = insufficiency_detector
         self.settings = settings or Settings()
-        self.good_rrf_threshold = getattr(self.settings, 'good_rrf_threshold', 0.01)
-        self.min_content_length = getattr(self.settings, 'min_content_length', 50)
+        
 
     
     async def search(self, query: str, k: int = 10, user_id: Optional[str] = None) -> List[HybridSearchResult]:
         local_results = await self.fusion_service.hybrid_search(query, k=200, user_id=user_id)
         print(f"Total resultados locales: {len(local_results)}")
 
-        good_local = filter_good_results(local_results, self.good_rrf_threshold, self.min_content_length)
+        good_local = self.insufficiency_detector.filter_good_results(local_results)
         print(f"Resultados 'buenos' locales: {len(good_local)}")
 
         # CORRECCIÓN: pasar len(good_local), no local_results
-        is_insufficient, web_needed = is_local_insufficient(len(good_local), k)
+        is_insufficient, web_needed = self.insufficiency_detector.is_local_insufficient(len(good_local), k)
         print(f"¿Insuficiente? {is_insufficient}, web_needed: {web_needed}")
 
         if not is_insufficient:
