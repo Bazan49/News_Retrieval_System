@@ -1,99 +1,52 @@
-# IndexModule - Arquitectura y flujo
+# Módulo de Indexación
 
-## 🧠 Panorama general
-`IndexModule` es el módulo responsable de **indexar documentos scraped** en ElasticSearch usando una arquitectura basada en capas (Domain + Infrastructure + Application), con inyección de dependencias para separar responsabilidades.
+El Módulo de Indexación es el componente encargado de transformar los documentos previamente adquiridos y segmentados (chunks) en estructuras de datos eficientes que permitan la recuperación rápida de información. En el contexto del sistema de noticias, su salida principal es un **índice invertido** persistente que será consultado por la fase de recuperación, ya sea de forma independiente o como parte de una estrategia de **búsqueda híbrida** (combinando la relevancia léxica con la semántica de los embeddings vectoriales).
 
-El flujo principal es:
+Se utiliza **Elasticsearch** como sistema subyacente para construir, almacenar y gestionar el índice invertido, ya que este proporciona una capa de persistencia eficiente y escalable, optimizada para búsquedas de texto.
 
-1. Se obtienen `ScrapedDocument` desde el módulo de scraping.
-2. Se transforman a `SearchDocument` (limpios y listos para indexar) mediante `DefaultDocumentProcessor`.
-3. Se asegura que el índice existe en ElasticSearch (creación con mapping).
-4. Se indexan los documentos en lote (`bulk`) y se refresca el índice.
+## Arquitectura y componentes principales
 
----
+El módulo de indexación sigue los principios de **Arquitectura Limpia** (Clean Architecture), lo que garantiza la separación de responsabilidades, la independencia tecnológica y la testabilidad. Las capas se organizan de la siguiente manera:
 
-## 🧩 Componentes (capas) de IndexModule
+- **Capa de dominio**: Contiene los **objetos de negocio puros**, como `SearchDocument`, que representan los datos indexables y sus metadatos. No dependen de ninguna tecnología externa. Además, define los **contratos abstractos** que debe cumplir cualquier infraestructura. El contrato principal es `IndexRepository`, que declara las operaciones necesarias para gestionar el índice.
+- **Capa de infraestructura**: Implementa los contratos anteriores con tecnologías concretas. La implementación principal es `ElasticsearchIndexRepository`, que utiliza el cliente de Elasticsearch (asíncrono) y el archivo `mapping.json` para gestionar el índice invertido.
+- **Capa de aplicación**: Alberga los casos de uso, como `IndexingService`, el cual orquesta la lógica de indexación (asegurar el índice, transformar los datos, indexar en lote y refrescar). También incluye el **mapeador** (`ChunkDocumentProcessor`), cuya responsabilidad es convertir las entidades externas (`Chunk` proveniente del módulo de segmentación) en entidades propias del dominio (`SearchDocument`). De esta forma, el dominio no se contamina con dependencias de otros módulos; solo se modifica el mapeador (de ser requerido), sin afectar al resto del código.
 
-### 1) Domain (lógica + contratos)
+La **inyección de dependencias** se gestiona mediante un contenedor (`SearchContainer`) construido con la librería **`dependency-injector`**, que registra y resuelve todas las dependencias del módulo de forma centralizada (cliente de Elasticsearch, repositorio, servicio de indexación, etc.).
 
-- **`SearchDocument`** (`IndexModule/Domain/search_document.py`)
-  - Representa el documento final que se guarda en ElasticSearch.
-  - Campos: `source`, `url`, `title`, `content`, `authors`, `date`.
+## El índice invertido: estructura y proceso de construcción
 
-- **`DefaultDocumentProcessor`** (`IndexModule/Domain/document_processor.py`)
-  - Convierte `ScrapedDocument` → `SearchDocument`.
+El corazón del módulo de indexación es el **índice invertido**, una estructura que asocia cada término con los documentos que lo contienen. Elasticsearch construye y mantiene el índice automáticamente según la configuración definida en `mapping.json`, siguiendo las fases clásicas del proceso de indexación.
 
-- **`IndexRepository`** (`IndexModule/Domain/index_repository.py`)
-  - Interfaz de repositorio (abstracta) usada por el servicio.
-  - Define métodos async:
-    - `ensure_index()`
-    - `index_one(...)`, `index_bulk(...)`
-    - `delete_by_id(...)`
-    - `refresh()`
+**Campos indexados**: solo los campos de tipo `text` (`title` y `content`) pasan por el analizador y generan términos que forman parte del índice invertido. El resto de los campos (`chunk_id`, `source`, `url`, `authors`, `date`, `chunk_number`) se definen como `keyword` o `date`; se almacenan como metadatos para su uso en filtros o resultados, pero **no contribuyen al índice invertido**.
 
----
+### 1. Extracción de unidades indexables (análisis del texto)
 
-### 2) Infrastructure (implementaciones concretas para ElasticSearch)
+Cuando un `SearchDocument` llega a Elasticsearch, sus campos `content` y `title` pasan por un **analyzer** personalizado llamado `spanish_analyzer`. Este analyzer realiza:
 
-- **`ElasticsearchClient`** (`IndexModule/Infrastructure/ElasticSearch/elasticsearch_client.py`)
-  - Crea clientes `sync` y `async` de ElasticSearch.
+- **Tokenización**: divide el texto en tokens usando el tokenizador `standard` (separa por palabras, elimina puntuación).
+- **Normalización**: convierte todo a minúsculas (`lowercase`).
+- **Filtrado**: elimina palabras vacías del español (artículos, preposiciones, etc.) mediante la lista `spanish_stop`.
+- **Stemming**: reduce variantes morfológicas a una raíz común usando `spanish_stemmer` (ej. "corriendo" → "corr").
 
-- **`ElasticsearchIndexRepository`** (`IndexModule/Infrastructure/ElasticSearch/elasticsearch_index_repository.py`)
-  - Implementa `IndexRepository` usando `AsyncElasticsearch`.
-  - `ensure_index()` crea el índice si no existe, usando un archivo JSON de mapping.
-  - `index_bulk()` utiliza `async_bulk` para rendimiento.
+El resultado es una lista de **términos** (unidades indexables) que formarán el vocabulario del índice.
 
-- **`mapping.json`** (`IndexModule/Infrastructure/ElasticSearch/mapping.json`)
-  - Define el mapping del índice (tipos, analizadores, campos, etc.).
+### 2. Construcción del índice invertido (posting lists)
 
----
+Para cada término extraído, Elasticsearch crea una **posting list** que contiene, al menos, los identificadores de los documentos (`_id` del chunk) y la frecuencia del término dentro de cada documento.
 
-### 3) Application (orquestación del flujo)
+Simultáneamente, Elasticsearch mantiene estadísticas globales por segmento: número total de documentos, frecuencia documental de cada término (`df`), longitud de cada documento y la longitud promedio del corpus (esenciales para modelos de ranking como BM25 o LMIR).
 
-- **`IndexService`** (`IndexModule/Application/index_service.py`)
-  - Orquesta el flujo completo:
-    1. `ensure_index()`
-    2. Convierte docs con `DefaultDocumentProcessor`
-    3. `index_bulk()`
-    4. `refresh()`
+### 3. Compresión del índice
 
-- **`index_main.py`** (ejemplo)
-  - Muestra cómo inicializar el contenedor, construir documentos y llamar al servicio.
+Para minimizar el espacio en disco, Elasticsearch aplica compresión sobre las posting lists. Estas técnicas reducen drásticamente el tamaño del índice. Por ejemplo:
 
----
+- **Front-coding** en el diccionario de términos para aprovechar prefijos comunes (ej. "automat", "automatic", "automation" se comprimen compartiendo "automat").
 
-## 🧩 Inyección de dependencias (DI)
+### 4. Almacenamiento y distribución
 
-- **`SearchContainer`** (`src/DI/continer.py`)
-  - Usa `dependency_injector`.
-  - Registra:
-    - Cliente Elastic (`ElasticsearchClient`)
-    - Repositorio (`ElasticsearchIndexRepository`)
-    - Servicio (`IndexService`)
+El índice se persiste en disco como una colección de **segmentos inmutables**. Elasticsearch distribuye estos segmentos en **shards** y **réplicas**. En nuestro proyecto educativo usamos un solo shard y cero réplicas para simplificar. Tanto el número de shards como de réplicas pueden ajustarse para escalar en producción.
 
----
+### 5. Actualización dinámica
 
-## 🛠 Flujo de indexación (paso a paso)
-
-1. `ScrapedDocument` llega desde el módulo de scraping.
-2. `IndexService.index_scraped_documents()` recibe la lista.
-3. Llama a `ensure_index()` para garantizar el índice.
-4. Se mapea cada documento a `SearchDocument`.
-5. Llama a `index_bulk(...)` para indexar masivamente.
-6. Llama a `refresh()` para que los documentos estén disponibles.
-
----
-
-## 🧪 Cómo probar rápidamente
-
-1. Asegúrate de que ElasticSearch esté corriendo en la URL configurada.
-2. Ajusta credenciales / hosts en `.env` o `Settings`.
-3. Ejecuta código similar al de `index_main.py`.
-
----
-
-## 🔎 Recomendaciones
-
-- Mantén el mapping y la configuración de ElasticSearch en un `.env` o config centralizada.
-- Evita hardcodear credenciales en scripts de prueba.
-- Si necesitas más repositorios (p.ej. otro motor de búsqueda), crea otra implementación de `IndexRepository`.
+Cuando se incorporan nuevos documentos al índice (ya sea para añadir, actualizar o eliminar), el sistema no reconstruye el índice completo desde cero. En su lugar, se aplican estrategias de **actualización incremental** que añaden los cambios en estructuras auxiliares, marcan las versiones obsoletas y, periódicamente, reorganizan y compactan los datos para mantener la eficiencia. Esto permite altas tasas de escritura sin degradar el tiempo de respuesta de las búsquedas.
