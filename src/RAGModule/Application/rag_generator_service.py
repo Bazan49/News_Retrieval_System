@@ -5,7 +5,7 @@ from src.RAGModule.Application.use_cases.prompt_builder import PromptBuilder
 from src.RAGModule.Domain.generator import BaseGenerator
 from src.RAGModule.Domain.rag_result import RAGResult
 
-class RAGService:
+class RAGGeneratorService:
 
     """
     Servicio de Generación Aumentada por Recuperación (RAG).
@@ -32,7 +32,7 @@ class RAGService:
         self.prompt_builder = prompt_builder
         self.generator = generator
 
-    async def answer(
+    async def generate_answer(
         self,
         query: str,
         hybrid_results: List[HybridSearchResult]
@@ -48,4 +48,4 @@ class RAGService:
         answer_text = await self.generator.generate(system_prompt, user_prompt)
 
         # 4. Retornar resultado con las fuentes originales (HybridSearchResult)
-        return RAGResult(query=query, answer=answer_text, sources=hybrid_results)
+        return answer_text
