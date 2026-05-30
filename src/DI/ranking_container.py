@@ -19,8 +19,6 @@ class RankingContainer(containers.DeclarativeContainer):
     vector_store=providers.Dependency()
 
     # ---------- Estrategia de fusión ----------
-
-    # ---------- Estrategia de fusión ----------
     fusion_strategy = providers.Singleton(
         RRFFusionStrategy,
         rrf_k=settings.provided.rrf_k,
@@ -67,12 +65,9 @@ class RankingContainer(containers.DeclarativeContainer):
         w_relevance=settings.provided.w_relevance,
         w_personalization=settings.provided.w_personalization,
         w_recency=settings.provided.w_recency,
-        w_source=settings.provided.w_source,
         scoring_strategies=providers.List(
             recency_scoring_strategy,
             personalization_scoring_strategy,
         ),
-        source_score_local=settings.provided.source_score_local,
-        source_score_web=settings.provided.source_score_web,
         activate_cross_encoder=settings.provided.activate_cross_encoder_for_relevance,
     )
