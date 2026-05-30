@@ -1,15 +1,12 @@
 from dependency_injector import containers, providers
-from src.DI.Config.settings import Settings
 from src.WebSearchModule.Application.use_cases.web_search_use_case import WebSearch
-from src.WebSearchModule.Application.web_search_service import WebSearchService
 from src.WebSearchModule.Infrastructure.rss.google_news_rss_fetcher import GoogleNewsRSSFetcher
 from src.WebSearchModule.Infrastructure.insufficiency_detector_impl import SimpleInsufficientResultsDetector
-from src.WebSearchModule.Infrastructure.web_search_document_processor import WebSearchDocumentProcessor
 
 class WebSearchContainer(containers.DeclarativeContainer):
     """Container de inyección de dependencias para WebSearchModule."""
     
-    settings = providers.Singleton(Settings)
+    settings = providers.Dependency() #ConfigContainer.settings
 
     web_search_fetcher = providers.Singleton(
         GoogleNewsRSSFetcher,

@@ -1,12 +1,11 @@
 from dependency_injector import containers, providers
 from src.Common.Chunking.Application.persistence_service import ChunkPersistenceService
-from src.DI.Config.settings import Settings
 from src.Common.Chunking.Infrastructure.newspaper_chunker import NewspaperChunker
 from src.Common.Chunking.Application.chunking_service import ChunkingService
 
 class ChunkingContainer(containers.DeclarativeContainer):
     
-    settings = providers.Singleton(Settings)
+    settings = providers.Dependency() #ConfigContainer.settings
 
     chunker = providers.Factory(
         NewspaperChunker,

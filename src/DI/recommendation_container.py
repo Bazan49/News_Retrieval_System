@@ -1,5 +1,4 @@
 from dependency_injector import containers, providers
-from src.DI.Config.settings import Settings
 from src.FeedbackModule.infrastructure.sqlite_feedback_repository import SQLiteFeedbackRepository
 from src.EmbeddingsModule.Application.vector_searcher_usecase import VectorSearcher
 from src.RecommendationModule.Infrastructure.sqlite_search_history_repository import SQLiteSearchHistoryRepository
@@ -7,12 +6,14 @@ from src.RecommendationModule.Application.user_profile_builder import UserProfil
 from src.RecommendationModule.Application.content_based_recommender import ContentRecommender
 
 class RecommendationContainer(containers.DeclarativeContainer):
+
+    settings = providers.Dependency() #ConfigContainer.settings
     feedback_repo = providers.Dependency()
     embedder = providers.Dependency()
     vector_searcher = providers.Dependency()
     vector_store = providers.Dependency()
 
-    search_history_repo = providers.Singleton(SQLiteSearchHistoryRepository, db_path=Settings().search_history_db_path)
+    search_history_repo = providers.Singleton(SQLiteSearchHistoryRepository, db_path=settings.provided.search_history_db_path)
     
 
     profile_builder = providers.Factory(

@@ -1,11 +1,11 @@
 from dependency_injector import containers, providers
 from src.FeedbackModule.infrastructure.sqlite_feedback_repository import SQLiteFeedbackRepository
-from src.DI.Config.settings import Settings
 from src.FeedbackModule.application.feedback_service import FeedbackService
 from src.FeedbackModule.application.refinement_service import RefinementService
 
 class FeedbackContainer(containers.DeclarativeContainer):
-    settings = providers.Singleton(Settings)
+
+    settings = providers.Dependency() #ConfigContainer.settings
     
     # Dependencia externa: embedder 
     embedder = providers.Dependency()

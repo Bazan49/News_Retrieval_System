@@ -1,3 +1,4 @@
+from src.DI.config_container import ConfigContainer
 from src.DI.feedback_container import FeedbackContainer
 from src.DI.rag_container import RAGContainer
 from src.DI.web_search_container import WebSearchContainer
@@ -9,6 +10,7 @@ from src.DI.chunking_container import ChunkingContainer
 from src.DI.recommendation_container import RecommendationContainer
 from src.DI.auth_container import AuthContainer
 
+_config_container = ConfigContainer()
 _search_container = SearchContainer()
 _embeddings_container = EmbeddingsContainer()
 _ranking_container = RankingContainer()
@@ -20,53 +22,74 @@ _feedback_container = FeedbackContainer()
 _recommendation_container = RecommendationContainer()
 _auth_container = AuthContainer()
 
+# Inyectar las dependencias en el contenedor de embeddings
+_embeddings_container.override_providers(
+    settings=_config_container.settings
+)
+
+# Inyectar las dependencias en el contenedor de búsqueda web
+_web_container.override_providers(
+    settings=_config_container.settings,
+)
+
+# Inyectar las dependencias en el contenedor de RAG
+_rag_container.override_providers(
+    settings=_config_container.settings,
+)
+
+# Inyectar las dependencias en el contenedor de búsqueda dispersa (LMIR + Elasticsearch)
+_search_container.override_providers(
+    settings=_config_container.settings,
+)
+
 # Inyectar las dependencias en el contenedor de búsqueda web 
 _web_container.override_providers(
+    settings=_config_container.settings,
     chunking_service=_persistence_container.chunking_service
 )
 
 # Inyectar las dependencias en el contenedor de persistencia de chunks
 _persistence_container.override_providers(
+    settings=_config_container.settings,
     vector_indexer=_embeddings_container.vector_indexer,
     index_service=_search_container.index_service
 )
 
 # Inyectar las dependencias en el contenedor de feedback
 _feedback_container.override_providers(
+    settings=_config_container.settings,
     embedder=_embeddings_container.embedder
 )
     
 # Inyectar las dependencias en el contenedor de ranking
 _ranking_container.override_providers(
+    settings=_config_container.settings,
     sparse_service=_search_container.retrieval_service,
     dense_searcher=_embeddings_container.vector_searcher,
-)
-
-# Inyectar las dependencias en el contenedor de orquestación
-_orchestration_container.override_providers(
-    fusion_service=_ranking_container.fusion_service ,        
-    web_search=_web_container.web_search,
-    chunk_persistence=_persistence_container.chunk_persistence,
-    insufficiency_detector=_web_container.insufficiency_detector
+    profile_builder=_recommendation_container.profile_builder,
+    embedder=_embeddings_container.embedder,
+    vector_store=_embeddings_container.vector_store,
 )
 
 # Inyectar las dependencias en el contenedor de recomendación
 _recommendation_container.override_providers(
+    settings=_config_container.settings,
     feedback_repo=_feedback_container.feedback_repository,
     embedder=_embeddings_container.embedder,
     vector_searcher=_embeddings_container.vector_searcher,
     vector_store=_embeddings_container.vector_store
 )
 
-# Inyectar las dependencias en el contenedor de ranking
-_ranking_container.override_providers(
-    sparse_service=_search_container.retrieval_service,
-    dense_searcher=_embeddings_container.vector_searcher,
+# Inyectar las dependencias en el contenedor de orquestación
+_orchestration_container.override_providers(
+    fusion_service=_ranking_container.fusion_service,
+    web_search=_web_container.web_search,
+    chunk_persistence=_persistence_container.chunk_persistence,
+    insufficiency_detector=_web_container.insufficiency_detector,
+    ranking_service=_ranking_container.ranking_service,                 
+    cross_encoder_strategy=_ranking_container.cross_encoder_strategy,   
+    settings=_config_container.settings
 )
-
-# Inyectar las dependencias que necesita PersonalizedRankingStrategy
-_ranking_container.profile_builder.override(_recommendation_container.profile_builder)
-_ranking_container.embedder.override(_embeddings_container.embedder)
 
 def get_sparse_service():
     """Retorna el servicio de búsqueda dispersa (LMIR + Elasticsearch)"""
