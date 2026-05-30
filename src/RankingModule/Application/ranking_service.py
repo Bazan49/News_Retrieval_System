@@ -9,26 +9,19 @@ class RankingService:
     - relevancia (normalizada a partir de rrf_score o cross_encoder_score)
     - personalización (personalization_similarity)
     - frescura (recency_score)
-    - procedencia (source_score, según source_type)
     """
     def __init__(
         self,
         w_relevance: float,
         w_personalization: float,
         w_recency: float,
-        w_source: float,
         scoring_strategies: List[ScoringStrategy],
-        source_score_local: float,
-        source_score_web: float,
         activate_cross_encoder: bool = True
     ):
         self.w_relevance = w_relevance
         self.w_personalization = w_personalization
         self.w_recency = w_recency
-        self.w_source = w_source
         self.strategies = scoring_strategies
-        self.source_score_local = source_score_local
-        self.source_score_web = source_score_web
         self.activate_cross_encoder = activate_cross_encoder
 
     async def compute(self, results: List[HybridSearchResult], user_id: Optional[str]) -> List[HybridSearchResult]:
@@ -50,20 +43,15 @@ class RankingService:
 
         # Calcular final_score
         for r in results:
-            source_score = self._get_source_score(r.source_type)
             r.final_score = (
                 self.w_relevance * r.relevance_score +
                 self.w_personalization * (r.personalization_similarity or 0.0) +
-                self.w_recency * (r.recency_factor or 0.0) +
-                self.w_source * source_score
+                self.w_recency * (r.recency_factor or 0.0)
             )
 
         # Ordenar por final_score descendente
         results.sort(key=lambda x: x.final_score, reverse=True)
         return results
-    
-    def _get_source_score(self, source_type: ResultSource) -> float:
-        return self.source_score_local if source_type == ResultSource.LOCAL else self.source_score_web
 
     def _min_max_normalize(
         self,
@@ -90,6 +78,6 @@ class RankingService:
                 norm_score = (score - min_s) / (max_s - min_s)
             else:
                 # Todos iguales
-                norm_score = default_value if score > 0 else 0.0
+                norm_score = default_value 
 
             r.relevance_score = norm_score
