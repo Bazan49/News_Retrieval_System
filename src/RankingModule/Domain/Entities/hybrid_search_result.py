@@ -11,13 +11,19 @@ class ResultSource(Enum):
 class HybridSearchResult:
     retrieval_result: RetrievalResult
     rrf_score: float
-    final_score: Optional[float] = None
     sparse_score: Optional[float] = None
     dense_score: Optional[float] = None
     sparse_rank: Optional[int] = None   
     dense_rank: Optional[int] = None   
     source_type: ResultSource = ResultSource.LOCAL   # origen del resultado
-
+    
+    # scores para ranking final
+    cross_encoder_score: Optional[float] = None
+    relevance_score: Optional[float] = None
+    recency_factor: Optional[float] = None 
+    personalization_similarity: Optional[float] = None  
+    final_score: Optional[float] = None
+          
     # Delegación de propiedades para acceso directo
     @property
     def doc_id(self) -> str:

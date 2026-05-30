@@ -19,6 +19,10 @@ class HybridSearchResultSchema(BaseModel):
     sparse_rank: Optional[int] = None
     dense_rank: Optional[int] = None
     source_type: ResultSource   # "local" o "web"
+    cross_encoder_score: Optional[float] = None  # puntuación del cross-encoder
+    relevance_score: Optional[float] = None
+    recency_factor: Optional[float] = None
+    personalization_similarity: Optional[float] = None
     final_score: Optional[float] = None  # puntuación final después de reranking
 
 class HybridSearchResponseSchema(BaseModel):

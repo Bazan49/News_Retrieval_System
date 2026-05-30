@@ -72,9 +72,16 @@ class ChromaVectorStore(BaseVectorStore):
     async def get_embeddings_by_ids(self, ids: List[str]) -> Dict[str, List[float]]:
         await self._ensure_client()
         result = await self.collection.get(ids=ids, include=["embeddings"])
-        if not result or not result["embeddings"]:
+        embeddings = result.get("embeddings")
+        if embeddings is None:
             return {}
-        return {doc_id: emb for doc_id, emb in zip(result["ids"], result["embeddings"])}
+        # Si es un array de NumPy vacío
+        if hasattr(embeddings, "size") and embeddings.size == 0:
+            return {}
+        # Si es una lista vacía
+        if len(embeddings) == 0:
+            return {}
+        return {doc_id: emb for doc_id, emb in zip(result["ids"], embeddings)}
 
     async def get_embedding_by_id(self, doc_id: str) -> Optional[np.ndarray]:
         """Recupera el embedding de un documento por su ID."""
