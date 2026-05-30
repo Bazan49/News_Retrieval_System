@@ -18,6 +18,10 @@ def map_hybrid_to_schema(hybrid: HybridSearchResult) -> HybridSearchResultSchema
         sparse_rank=hybrid.sparse_rank,
         dense_rank=hybrid.dense_rank,
         source_type=hybrid.source_type,
+        cross_encoder_score=hybrid.cross_encoder_score,
+        relevance_score = hybrid.relevance_score,
+        recency_factor = hybrid.recency_factor,
+        personalization_similarity = hybrid.personalization_similarity,
         final_score=hybrid.final_score
     )
 
