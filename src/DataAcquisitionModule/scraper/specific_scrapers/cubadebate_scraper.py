@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-from src.DataAcquisitionModule.scraper.base_scraper import BaseScraper
+from src.DataAcquisitionModule.Scraper.base_scraper import BaseScraper
 
 class CubadebateScraper(BaseScraper):
 

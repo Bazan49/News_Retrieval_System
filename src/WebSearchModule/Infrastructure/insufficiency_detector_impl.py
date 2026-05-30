@@ -1,97 +1,79 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
+from src.RankingModule.Domain.Entities.hybrid_search_result import HybridSearchResult
 from src.WebSearchModule.Domain.insufficiency_detector import InsufficientResultsDetector
-
+from src.DI.Config.settings import Settings
 
 class SimpleInsufficientResultsDetector(InsufficientResultsDetector):
-    """
-    Detector simple de insuficiencia basado en cantidad y puntuación de resultados.
-    
-    Criterios:
-    - Pocos resultados (< min_results)
-    - Puntuaciones bajas (promedio < min_score_threshold)
-    - Falta de resultados = insuficiente
-    """
-    
     def __init__(
         self, 
         min_results: int = 3,
         min_score_threshold: float = -50.0,
-        empty_results_insufficient: bool = True
+        empty_results_insufficient: bool = True,
+        good_rrf_threshold: float = None,        
+        min_content_length: int = None,          
+        settings: Settings = None
     ):
-        """
-        Inicializa el detector de insuficiencia.
-        
-        Args:
-            min_results: Número mínimo de resultados considerado suficiente
-            min_score_threshold: Puntuación mínima promedio aceptable
-            empty_results_insufficient: Si True, sin resultados = insuficiente
-        """
         self.min_results = min_results
         self.min_score_threshold = min_score_threshold
         self.empty_results_insufficient = empty_results_insufficient
-    
+        if settings is None:
+            settings = Settings()
+        self.good_rrf_threshold = good_rrf_threshold if good_rrf_threshold is not None else getattr(settings, 'good_rrf_threshold', 0.018)
+        self.min_content_length = min_content_length if min_content_length is not None else getattr(settings, 'min_content_length', 100)
+
     async def is_insufficient(
         self, 
         query: str, 
         retrieved_results: List[Dict[str, Any]],
         threshold: float = 0.5
     ) -> bool:
-        """
-        Determina si los resultados son insuficientes.
-        
-        Args:
-            query: Consulta (informativa, no se usa en la lógica)
-            retrieved_results: Resultados recuperados
-            threshold: Umbral de insuficiencia (0-1)
-            
-        Returns:
-            True si insuficiente, False si suficiente
-        """
         score = await self.get_insufficiency_score(query, retrieved_results)
         return score > threshold
-    
+
     async def get_insufficiency_score(
         self,
         query: str,
         retrieved_results: List[Dict[str, Any]]
     ) -> float:
-        """
-        Calcula score de insuficiencia (0-1).
-        
-        Args:
-            query: Consulta
-            retrieved_results: Resultados recuperados
-            
-        Returns:
-            Score donde 0 = suficiente, 1 = muy insuficiente
-        """
-        # Sin resultados = máxima insuficiencia
         if not retrieved_results:
             return 1.0 if self.empty_results_insufficient else 0.0
         
         num_results = len(retrieved_results)
-        
-        # Score por cantidad de resultados
         if num_results < self.min_results:
             quantity_score = (self.min_results - num_results) / self.min_results
         else:
             quantity_score = 0.0
         
-        # Score por puntuación promedio
-        scores = [
-            result.get("score", 0.0)
-            for result in retrieved_results
-            if "score" in result
-        ]
-        
+        scores = [r.get("score", 0.0) for r in retrieved_results if "score" in r]
         quality_score = 0.0
         if scores:
             avg_score = sum(scores) / len(scores)
             if avg_score < self.min_score_threshold:
-                # Normalizar: qué tan lejos del threshold
                 difference = self.min_score_threshold - avg_score
                 quality_score = min(1.0, difference / 100.0)
         
-        # Combinar scores: 60% cantidad, 40% calidad
         insufficiency = (0.6 * quantity_score) + (0.4 * quality_score)
         return min(1.0, max(0.0, insufficiency))
+
+    # Métodos adicionales para calidad de resultados
+    def is_good_result(self, result: HybridSearchResult, best_rrf: float) -> bool:
+        if result.rrf_score < self.good_rrf_threshold:
+            return False
+        if not result.content or len(result.content.strip()) < self.min_content_length:
+            return False
+        if not result.title or not result.title.strip():
+            return False
+        return True
+
+    def filter_good_results(self, results: List[HybridSearchResult]) -> List[HybridSearchResult]:
+        if not results:
+            return []
+        best = max(r.rrf_score for r in results)
+        return [r for r in results if self.is_good_result(r, best)]
+
+    def is_local_insufficient(self, good_local_count: int, k: int, extra: int = 5) -> Tuple[bool, int]:
+        if good_local_count >= k:
+            return False, 0
+        needed = k - good_local_count
+        needed = max(1, min(k, needed)) + extra
+        return True, needed
