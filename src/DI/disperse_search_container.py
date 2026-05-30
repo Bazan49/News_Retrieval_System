@@ -3,7 +3,6 @@ from src.IndexModule.Application.index_service import IndexService
 from src.IndexModule.Application.document_processor import ChunkDocumentProcessor
 from src.IndexModule.Infrastructure.ElasticSearch.elasticsearch_index_repository import ElasticsearchIndexRepository
 from src.IndexModule.Infrastructure.ElasticSearch.elasticsearch_client import ElasticsearchClient
-from src.DI.Config.settings import Settings
 from src.RetrievalModule.Application.retrieval_service import RetrievalAppService
 from src.RetrievalModule.Application.lmir_retriever import LMIRScoreFunction
 from src.RetrievalModule.Infrastructure.elasticsearch_retriever import ElasticsearchRetriever
@@ -12,7 +11,7 @@ from src.RetrievalModule.Infrastructure.elasticsearch_query_preprocesor import E
 
 class SearchContainer(containers.DeclarativeContainer):
     
-    settings = providers.Singleton(Settings)
+    settings = providers.Dependency() #ConfigContainer.settings
 
     es_client = providers.Singleton(
         ElasticsearchClient,

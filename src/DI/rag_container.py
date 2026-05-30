@@ -3,11 +3,10 @@ from src.RAGModule.Application.use_cases.context_builder import ContextBuilder
 from src.RAGModule.Application.use_cases.prompt_builder import PromptBuilder
 from src.RAGModule.Infrastructure.groq_generator import GroqGenerator
 from src.RAGModule.Application.rag_service import RAGService
-from src.DI.Config.settings import Settings
 
 class RAGContainer(containers.DeclarativeContainer):
     
-    settings = providers.Singleton(Settings)
+    settings = providers.Dependency() #ConfigContainer.settings
 
     context_builder = providers.Factory(
         ContextBuilder,

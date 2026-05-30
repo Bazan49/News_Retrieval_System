@@ -1,5 +1,4 @@
 from dependency_injector import containers, providers
-from src.DI.Config.settings import Settings
 from src.EmbeddingsModule.Application.vector_indexer_usecase import VectorIndexer
 from src.EmbeddingsModule.Application.vector_searcher_usecase import VectorSearcher
 from src.EmbeddingsModule.Infrastructure.sentence_transformer_embedder import SentenceTransformerEmbedder
@@ -7,7 +6,7 @@ from src.EmbeddingsModule.Infrastructure.chroma_vector_store import ChromaVector
 
 class EmbeddingsContainer(containers.DeclarativeContainer):
     
-    settings = providers.Singleton(Settings)
+    settings = providers.Dependency() #ConfigContainer.settings
 
     # Infrastructure
     embedder = providers.Singleton(

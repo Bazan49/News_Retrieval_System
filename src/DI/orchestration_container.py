@@ -1,18 +1,16 @@
 from dependency_injector import containers, providers
-from src.DI.web_search_container import WebSearchContainer
 from src.DI.Config.settings import Settings
-from src.FeedbackModule.infrastructure.sqlite_feedback_repository import SQLiteFeedbackRepository
-from src.FeedbackModule.application.feedback_service import FeedbackService
-from src.FeedbackModule.application.refinement_service import RefinementService
 from src.Orchestration.web_extended_hybrid_search_service import WebFallbackHybridSearchService
 
 class OrchestrationContainer(containers.DeclarativeContainer):
     # Dependencias externas (se inyectan desde otros contenedores)
+    settings = providers.Dependency() #ConfigContainer.settings
     fusion_service = providers.Dependency()
     web_search = providers.Dependency()
     chunk_persistence = providers.Dependency()
     insufficiency_detector = providers.Dependency()
-    feedback = providers.Dependency()
+    ranking_service = providers.Dependency()  
+    cross_encoder_strategy = providers.Dependency()
     
     # Servicio orquestador
     web_extended_hybrid = providers.Factory(
@@ -20,6 +18,8 @@ class OrchestrationContainer(containers.DeclarativeContainer):
         fusion_service=fusion_service,
         web_search=web_search,
         chunk_persistence=chunk_persistence,
-         insufficiency_detector=WebSearchContainer.insufficiency_detector,
-        settings=providers.Singleton(Settings)
+        insufficiency_detector=insufficiency_detector,
+        ranking_service=ranking_service,
+        re_ranking_strategy=cross_encoder_strategy,
+        settings=settings
     )
