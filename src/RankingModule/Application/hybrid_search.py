@@ -17,12 +17,10 @@ class FusionService:
         sparse_service: RetrievalAppService,
         dense_searcher: VectorSearcher,
         fusion_strategy: FusionStrategy,
-        ranking_strategies: Optional[List[RankingStrategy]] = None,  # lista
     ):
         self.sparse_service = sparse_service
         self.dense_searcher = dense_searcher
         self.fusion_strategy = fusion_strategy
-        self.ranking_strategies = ranking_strategies or []
 
     async def hybrid_search(
         self,
@@ -38,11 +36,4 @@ class FusionService:
         # Fusionar usando la estrategia inyectada
         fused = await self.fusion_strategy.merge(sparse_results, dense_results)
 
-        # Aplicar cada estrategia de ranking en orden
-        for strategy in self.ranking_strategies:
-            # Si la estrategia tiene método rerank_with_user (como PersonalizedRankingStrategy)
-            if hasattr(strategy, 'rerank_with_user') and user_id:
-                fused = await strategy.rerank_with_user(user_id, fused)
-            elif hasattr(strategy, 'rerank'):
-                fused = await strategy.rerank(fused)
         return fused
