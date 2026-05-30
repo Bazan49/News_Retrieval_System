@@ -41,5 +41,5 @@ async def hybrid_search_web_extended(
     user_id = current_user or params.user_id
     if user_id:
         await history_repo.save_query(user_id, params.q)
-    results = await service.search(params.q, k=params.k, user_id=user_id)
+    results = await service.retrieve(params.q, k=params.k, user_id=user_id)
     return map_hybrid_list_to_response(params.q, results)
