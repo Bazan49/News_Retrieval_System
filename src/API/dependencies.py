@@ -2,7 +2,6 @@ from src.DI.config_container import ConfigContainer
 from src.DI.feedback_container import FeedbackContainer
 from src.DI.rag_container import RAGContainer
 from src.DI.web_search_container import WebSearchContainer
-from src.DI.orchestration_container import OrchestrationContainer
 from src.DI.ranking_container import RankingContainer
 from src.DI.disperse_search_container import SearchContainer      
 from src.DI.embeddings_container import EmbeddingsContainer 
@@ -14,7 +13,6 @@ _config_container = ConfigContainer()
 _search_container = SearchContainer()
 _embeddings_container = EmbeddingsContainer()
 _ranking_container = RankingContainer()
-_orchestration_container = OrchestrationContainer()
 _web_container = WebSearchContainer()
 _persistence_container = ChunkingContainer()  
 _rag_container = RAGContainer()
@@ -29,11 +27,6 @@ _embeddings_container.override_providers(
 
 # Inyectar las dependencias en el contenedor de búsqueda web
 _web_container.override_providers(
-    settings=_config_container.settings,
-)
-
-# Inyectar las dependencias en el contenedor de RAG
-_rag_container.override_providers(
     settings=_config_container.settings,
 )
 
@@ -80,16 +73,24 @@ _recommendation_container.override_providers(
     vector_store=_embeddings_container.vector_store
 )
 
-# Inyectar las dependencias en el contenedor de orquestación
-_orchestration_container.override_providers(
+# Inyectar las dependencias en el contenedor de RAG
+_rag_container.override_providers(
+    settings=_config_container.settings,
     fusion_service=_ranking_container.fusion_service,
+    ranking_service=_ranking_container.ranking_service,
+    re_ranking_strategy=_ranking_container.cross_encoder_strategy,
     web_search=_web_container.web_search,
     chunk_persistence=_persistence_container.chunk_persistence,
     insufficiency_detector=_web_container.insufficiency_detector,
-    ranking_service=_ranking_container.ranking_service,                 
-    cross_encoder_strategy=_ranking_container.cross_encoder_strategy,   
-    settings=_config_container.settings
 )
+
+def get_rag_orchestrator():
+    """
+    Retorna el orquestador RAG que coordina el pipeline completo:
+    - Recuperación de documentos mediante RetrieverService.
+    - Generación de respuesta mediante RAGGeneratorService.
+    """
+    return _rag_container.rag_orchestrator()
 
 def get_sparse_service():
     """Retorna el servicio de búsqueda dispersa (LMIR + Elasticsearch)"""
@@ -104,15 +105,16 @@ def get_hybrid_service():
     return _ranking_container.fusion_service()
 
 def get_web_extended_hybrid():
-    """Retorna el servicio de búsqueda híbrida extendida (fusión de dispersa, densa y web)"""
-    return _orchestration_container.web_extended_hybrid()
+    """
+    Retorna el servicio de recuperación híbrida (RetrieverService) que combina
+    búsqueda local (dispersa + densa), fallback a búsqueda web, re-ranking opcional
+    y posicionamiento final.
+    """
+    return _rag_container.retriever_service()
 
 def get_web_search_for_test():
     """Retorna una instancia de WebSearch para pruebas."""
     return _web_container.web_search()
-
-def get_rag_service():
-    return _rag_container.rag_service()
 
 def get_feedback_service():
     return _feedback_container.feedback_service()
