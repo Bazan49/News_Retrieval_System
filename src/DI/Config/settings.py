@@ -23,14 +23,15 @@ class Settings(BaseSettings):
     chunker_max_tokens: int = 512
     overlap_percent: int = 15
 
-    # RAG - Groq
-    groq_api_key: Optional[str] = None
-    groq_model_id: str = "llama-3.3-70b-versatile"
-    groq_temperature: float = 0.3
-    groq_max_tokens: int = 700
-    groq_frequency_penalty: float = 0.5
-    groq_presence_penalty: float = 0.3
-    groq_top_p: float = 0.95
+    # RAG 
+    mistral_api_key: str  # Mistral API key
+
+    model_id: str = "mistral-small-latest"
+    temperature: float = 0.3
+    max_tokens: int = 500
+    frequency_penalty: float = 0.5
+    presence_penalty: float = 0.3
+    top_p: float = 0.95
     
     # RAG - ContextBuilder
     rag_max_chunks: int = 10
