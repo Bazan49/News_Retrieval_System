@@ -3,5 +3,6 @@ from src.AuthModule.Infrastructure.sqlite_user_repository import SQLiteUserRepos
 from src.AuthModule.Application.auth_service import AuthService
 
 class AuthContainer(containers.DeclarativeContainer):
-    user_repository = providers.Singleton(SQLiteUserRepository, db_path="users.db")
+    settings = providers.Dependency()
+    user_repository = providers.Singleton(SQLiteUserRepository, db_path=settings.provided.users_db_path)
     auth_service = providers.Factory(AuthService, user_repo=user_repository)
