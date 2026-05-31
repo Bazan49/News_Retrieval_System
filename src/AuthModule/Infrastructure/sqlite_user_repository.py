@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import aiosqlite
 from typing import Optional
 from src.AuthModule.Domain.entities import User
@@ -6,7 +8,10 @@ from src.AuthModule.Domain.interfaces.user_repository import UserRepository
 class SQLiteUserRepository(UserRepository):
     def __init__(self, db_path: str = "users.db"):
         self.db_path = db_path
-
+        parent = Path(self.db_path).parent
+        if parent and not parent.exists():
+            parent.mkdir(parents=True, exist_ok=True)
+        
     async def _init_db(self):
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute("""

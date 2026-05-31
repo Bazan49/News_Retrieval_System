@@ -53,6 +53,10 @@ _feedback_container.override_providers(
     settings=_config_container.settings,
     embedder=_embeddings_container.embedder
 )
+
+_auth_container.override_providers(
+    settings=_config_container.settings
+)
     
 # Inyectar las dependencias en el contenedor de ranking
 _ranking_container.override_providers(
