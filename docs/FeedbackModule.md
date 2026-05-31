@@ -1,6 +1,6 @@
 # Módulo de Feedback y Refinamiento
 
-El módulo de feedback permite a los usuarios calificar la relevancia de los fragmentos (chunks) devueltos por el sistema mediante un sistema de “manita arriba” (👍) o “manita abajo” (👎). Además, incorpora un mecanismo de **refinamiento de consultas** que, a partir de un fragmento que recibió feedback positivo, extrae palabras clave y expande la consulta original para lanzar una nueva búsqueda, mejorando así los resultados en la sesión actual. Este módulo forma parte del componente opcional de *expansión y retroalimentación* del proyecto.
+El módulo de feedback permite a los usuarios calificar la relevancia de los fragmentos (chunks) devueltos por el sistema mediante un sistema de “manita arriba” (👍) o “manita abajo” (👎). Además, incorpora un mecanismo de **refinamiento de consultas** que, a partir de uno o varios fragmentos que recibieron feedback positivo, extrae palabras clave y expande la consulta original para lanzar una nueva búsqueda, mejorando así los resultados en la sesión actual. Este módulo forma parte del componente opcional de *expansión y retroalimentación* del proyecto.
 
 ---
 
@@ -11,14 +11,14 @@ El módulo de feedback permite a los usuarios calificar la relevancia de los fra
 `FeedbackModule` es el módulo responsable de:
 
 - Almacenar de forma **persistente** las valoraciones de los usuarios sobre los fragmentos recuperados (usando SQLite).
-- Ofrecer una operación de **refinamiento** basada en expansión de consultas (KeyBERT + SentenceTransformer).
+- Ofrecer una operación de **refinamiento** basada en expansión de consultas (KeyBERT + SentenceTransformer), que ahora soporta **múltiples fragmentos** en una sola petición.
 - Proveer datos de feedback que serán utilizados por el **módulo de recomendación** para construir el perfil de usuario y personalizar resultados.
 
 El flujo principal es:
 
 1. El usuario envía un feedback (positivo o negativo) asociado a un fragmento (`chunk_id`) mediante `POST /feedback/`.
 2. El sistema guarda el feedback en una base de datos SQLite (`feedback.db`) con índices para consultas rápidas.
-3. Si el usuario solicita “mejorar búsqueda” (`POST /feedback/refine`) sobre un fragmento que recibió like, se extraen keywords del fragmento, se expande la consulta original y se ejecuta una nueva búsqueda híbrida, devolviendo los resultados actualizados.
+3. Si el usuario solicita “mejorar búsqueda” (`POST /feedback/refine`) sobre **uno o varios fragmentos** que recibieron like, el sistema extrae palabras clave de cada fragmento, las combina (priorizando las más relevantes) y expande la consulta original, ejecutando una nueva búsqueda híbrida que devuelve los resultados actualizados.
 
 Los feedbacks almacenados son consumidos por `UserProfileBuilder` (del módulo de recomendación) para construir el perfil del usuario y personalizar futuras búsquedas a través de `PersonalizedRankingStrategy`.
 
@@ -56,19 +56,20 @@ Los feedbacks almacenados son consumidos por `UserProfileBuilder` (del módulo d
   - Servicio central para extraer palabras clave y expandir consultas.
   - Utiliza `SentenceTransformer` (modelo configurable) y `KeyBERT`.
   - Métodos principales:
-    - `extract_keywords(text, top_n)`: limpia el texto y extrae las palabras clave más relevantes.
-    - `expand_query(original_query, chunk_content, top_n)`: genera una nueva consulta añadiendo las keywords que no están ya en la consulta original.
-    - `refine_search(...)`: llama a `search_service.hybrid_search()` con la consulta expandida y devuelve `RefinementResult`.
+    - `extract_keywords(text)`: extrae palabras clave de un fragmento (sin scores).
+    - `_extract_keywords_with_scores(text)`: extrae palabras clave con sus puntuaciones de relevancia (usado internamente).
+    - `refine_search(original_query, chunk_contents, search_service)`: recibe una **lista de contenidos de fragmentos**, extrae palabras clave de todos ellos, las ordena por score, selecciona las `top_n` más relevantes y únicas, construye la consulta expandida y lanza la nueva búsqueda.
+    - Se aplica un límite máximo de fragmentos procesados (por defecto 10) para evitar ruido y garantizar rendimiento.
 
 ### 4) API (routers y schemas)
 
 - **Router** (`src/API/routers/feedback.py`):
   - `POST /feedback/` → guarda feedback.
-  - `POST /feedback/refine` → refina búsqueda a partir de un fragmento con like (devuelve resultados reales).
+  - `POST /feedback/refine` → refina búsqueda a partir de **uno o varios fragmentos** con like (devuelve resultados reales).
 
 - **Schemas** (`src/API/schemas/feedback.py`):
   - `FeedbackRequest`: `query`, `chunk_id`, `chunk_content`, `rating`, `user_id`.
-  - `RefineRequest`: `original_query`, `chunk_content`, `top_n_terms`.
+  - `RefineRequest`: acepta `original_query` y `chunk_contents` (lista de strings). Se mantiene `chunk_content` opcional por compatibilidad con versiones anteriores.
   - `RefineResponse`: `original_query`, `expanded_query`, `results` (lista de `HybridSearchResultSchema`).
 
 ### 5) Inyección de dependencias
@@ -92,12 +93,14 @@ Los feedbacks almacenados son consumidos por `UserProfileBuilder` (del módulo d
 - **Base de datos SQLite**: archivo `feedback.db` en la raíz del proyecto. Se crea automáticamente al primer guardado.
 - **Índices**: `idx_query`, `idx_user`, `idx_rating` aceleran las consultas.
 
-### Refinamiento de consulta (expansión explícita)
+### Refinamiento de consulta (expansión explícita) con múltiples fragmentos
 
-- El endpoint `/refine` recibe `original_query`, `chunk_content` y `top_n_terms`.
-- `RefinementService.expand_query()` extrae keywords (KeyBERT) del `chunk_content` y las añade a la consulta original si no están ya presentes.
-- Luego llama a `search_service.hybrid_search()` con la consulta expandida y devuelve los nuevos resultados (10 por defecto).
-- **Nota:** Este refinamiento es **explícito** (solo se activa cuando el usuario lo pide).
+- El endpoint `/feedback/refine` recibe `original_query` y `chunk_contents` (lista de strings con el contenido de los fragmentos que gustaron al usuario).
+- `RefinementService.refine_search` procesa cada fragmento extrayendo palabras clave con sus puntuaciones de relevancia (mediante KeyBERT).
+- Se combinan todas las palabras clave de todos los fragmentos, se ordenan por puntuación descendente y se seleccionan las `top_n` (por defecto 5) eliminando duplicados semánticos y palabras cortas.
+- Se construye la consulta expandida añadiendo esas palabras clave a la consulta original (solo si no están ya presentes).
+- Se ejecuta una nueva búsqueda híbrida con la consulta expandida y se devuelven los resultados (por defecto 10 documentos).
+- Se limita el número de fragmentos procesados a un máximo configurable (por defecto 10) para mantener la eficiencia y evitar consultas demasiado largas.
 
 ### Uso de feedbacks por otros módulos
 
@@ -117,10 +120,12 @@ Los valores se definen en `Settings` (archivo `.env`).
 ## Ventajas
 
 - **Persistencia**: Los feedbacks sobreviven a reinicios del servidor gracias a SQLite.
-- **Refinamiento explícito**: El usuario puede refinar su consulta basándose en un fragmento que le gustó, obteniendo resultados más precisos.
+- **Refinamiento explícito y múltiple**: El usuario puede refinar su consulta basándose en **varios fragmentos** que le gustaron, obteniendo resultados más precisos y representativos de sus intereses.
 - **Modularidad**: El módulo proporciona datos de feedback que son reutilizados por el módulo de recomendación sin acoplamiento directo.
+- **Eficiencia**: Se limita el número de fragmentos procesados y se ordenan las keywords por relevancia para evitar ruido.
 
 ## Limitaciones actuales
 
 - **Sin re‑ranking automático**: El feedback no influye automáticamente en los resultados de búsqueda (la personalización se delega al módulo de recomendación).
 - **Dependencia de la calidad de KeyBERT**: La extracción de keywords puede no ser perfecta para textos muy cortos o técnicos.
+- **Límite de fragmentos**: Si el usuario selecciona muchos fragmentos (>10), solo se procesan los primeros para mantener el rendimiento.
