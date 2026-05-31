@@ -32,25 +32,25 @@ class RAGOrchestratorService:
         answer_text = await self.generator.generate_answer(query, hybrid_results)
 
         # 2. Filtrar para mostrar solo un chunk por documento (el de mayor final_score)
-        unique_sources = self._deduplicate_by_url(hybrid_results)
+        unique_sources = self._deduplicate(hybrid_results)
 
         print(f"Resultados únicos por URL: {len(unique_sources)}")
 
         # Retornar resultado con la respuesta y las fuentes utilizadas
         return RAGResult(query=query, answer=answer_text, sources=hybrid_results)
     
-    def _deduplicate_by_url(self, results: List[HybridSearchResult]) -> List[HybridSearchResult]:
+    def _deduplicate(self, results: List[HybridSearchResult]) -> List[HybridSearchResult]:
         """
         Dada una lista de resultados ya ordenada por relevancia (final_score descendente),
-        conserva solo el primer chunk de cada URL (el mejor del documento).
+        conserva solo el primer chunk de cada documento (el mejor del documento).
         """
-        seen_urls = set()
-        unique_sources = []
+        seen_titles = set()
+        unique = []
         for res in results:
-            if res.url not in seen_urls:
-                seen_urls.add(res.url)
-                unique_sources.append(res)
-        return unique_sources
+            if res.title not in seen_titles:
+                seen_titles.add(res.title)
+                unique.append(res)
+        return unique
 
         
     

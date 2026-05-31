@@ -1,6 +1,7 @@
 import math
 from datetime import datetime
 from typing import List
+from src.Common.RetrievalResult.retrieval_result import RetrievalResult
 from src.EmbeddingsModule.Application.vector_searcher_usecase import VectorSearcher
 from src.RecommendationModule.Domain.entities import RecommendationRequest, RecommendationResult
 from .user_profile_builder import UserProfileBuilder
@@ -27,7 +28,7 @@ class ContentRecommender:
             query_weight=request.query_weight
         )
         if profile is None:
-            return RecommendationResult(user_id=request.user_id, recommended_docs=[], scores=[])
+            return RecommendationResult(user_id=request.user_id, recommended_docs=[])
 
         # Obtener documentos similares (solicitar más para poder filtrar y reordenar)
         raw_results = await self.vector_searcher.search_by_vector(profile, k=request.max_results * 2)
@@ -56,9 +57,28 @@ class ContentRecommender:
 
         # Ordenar por similitud boosteada descendente y truncar
         final_results.sort(key=lambda x: x[1], reverse=True)
-        top_docs = [doc for doc, _ in final_results[:request.max_results]]
+        print(f"Total de resultados: {len(final_results)}")
+
+        # Eliminar duplicados por URL
+        final_results = self._deduplicate([doc for doc, _ in final_results])
+        print(f"Total de resultados después de eliminar duplicados: {len(final_results)}")
+        
+        top_docs = final_results[:request.max_results]
 
         return RecommendationResult(
             user_id=request.user_id,
             recommended_docs=top_docs
         )
+    
+    def _deduplicate(self, results: List[RetrievalResult]) -> List[RetrievalResult]:
+        """
+        Dada una lista de resultados ya ordenada por relevancia (final_score descendente),
+        conserva solo el primer chunk de cada documento (el mejor del documento).
+        """
+        seen_titles = set()
+        unique = []
+        for res in results:
+            if res.title not in seen_titles:
+                seen_titles.add(res.title)
+                unique.append(res)
+        return unique
