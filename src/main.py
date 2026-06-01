@@ -5,6 +5,10 @@ from fastapi.security import OAuth2PasswordBearer
 
 from pathlib import Path
 
+# Configuración de logging
+from src.logging_config import setup_logging
+setup_logging()
+
 # Importar los routers
 from src.API.routers import feedback
 from src.API.routers import web_search
@@ -20,7 +24,6 @@ app = FastAPI(
     description="Sistema de recuperación de noticias.",
     version="1.0.0"
 )
-
 
 # Crear directorio para bases de datos SQLite si no existe
 DB_FOLDER = "sqlite_data"

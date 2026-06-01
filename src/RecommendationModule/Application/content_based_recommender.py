@@ -57,11 +57,9 @@ class ContentRecommender:
 
         # Ordenar por similitud boosteada descendente y truncar
         final_results.sort(key=lambda x: x[1], reverse=True)
-        print(f"Total de resultados: {len(final_results)}")
 
         # Eliminar duplicados por URL
         final_results = self._deduplicate([doc for doc, _ in final_results])
-        print(f"Total de resultados después de eliminar duplicados: {len(final_results)}")
         
         top_docs = final_results[:request.max_results]
 

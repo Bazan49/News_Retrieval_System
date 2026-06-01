@@ -1,9 +1,12 @@
+import logging
 import math
 from datetime import datetime, timezone
 from dateutil import parser
 from typing import List, Optional
 from src.RankingModule.Domain.Interfaces.scoring_strategy import ScoringStrategy
 from src.RankingModule.Domain.Entities.hybrid_search_result import HybridSearchResult
+
+logger = logging.getLogger("RankingModule.RecencyScoringStrategy")
 
 class RecencyScoringStrategy(ScoringStrategy):
 
@@ -49,6 +52,6 @@ class RecencyScoringStrategy(ScoringStrategy):
 
             except Exception as e:
                 # Fallo en parsing → dato inválido
-                print(f"Error parsing recency for doc {res.doc_id}: {pub_date} - Error: {e}")
-                print(f"{current_date} {current_date.tzinfo} - {pub_date} {pub_date.tzinfo}")
+                logger.error("Error al procesar fecha de documento | doc_id=%s, fecha_raw=%s, error=%s",
+                             res.doc_id, pub_date, str(e), exc_info=False)
                 res.recency_factor = 0.5  # valor neutro para fechas inválidas

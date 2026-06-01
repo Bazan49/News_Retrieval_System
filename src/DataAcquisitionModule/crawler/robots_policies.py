@@ -7,6 +7,9 @@ from urllib.robotparser import RobotFileParser
 from urllib.parse import urlparse
 from urllib.error import URLError
 import chardet
+import logging
+
+logger = logging.getLogger("DataAcquisitionModule.RobotsManager")
 
 class RobotsManager:
     _parsers = {}
@@ -74,7 +77,7 @@ class RobotsManager:
         except (URLError, TimeoutError, Exception) as e:
             if retry < cls.MAX_RETRIES:
                 wait = cls.RETRY_DELAY * (retry + 1)
-                print(f"[RobotsManager] Error en {robots_url} (intento {retry+1}/{cls.MAX_RETRIES+1}): {e}. Reintentando en {wait}s...")
+                logger.error(f"Error en {robots_url} (intento {retry+1}/{cls.MAX_RETRIES+1}): {e}. Reintentando en {wait}s...")
                 time.sleep(wait)
                 return cls._fetch_robots_txt(robots_url, retry + 1)
             else:
@@ -85,7 +88,7 @@ class RobotsManager:
     def can_fetch(cls, url: str, user_agent: str = "*") -> bool:
         parsed = urlparse(url)
         if not parsed.scheme or not parsed.netloc:
-            print(f"[RobotsManager] URL inválida o sin dominio: {url} -> Permitiendo acceso por seguridad")
+            logger.error(f"URL inválida o sin dominio: {url} -> Permitiendo acceso por seguridad")
             return True
         
         domain = f"{parsed.scheme}://{parsed.netloc}"
@@ -96,7 +99,7 @@ class RobotsManager:
             parser, timestamp = cls._parsers[domain]
             if time.time() - timestamp < cls.TTL_SECONDS:
                 if parser is None:
-                    print(f"[RobotsManager] Cache: robots.txt de {domain} no disponible (error previo) -> Permitiendo acceso por defecto")
+                    logger.error(f"Cache: robots.txt de {domain} no disponible (error previo) -> Permitiendo acceso por defecto")
                     return True
                 else:
                     allowed = parser.can_fetch(user_agent, url)
@@ -104,7 +107,7 @@ class RobotsManager:
             else:
                 # Caché expirada, la eliminamos para volver a descargar
                 del cls._parsers[domain]
-                print(f"[RobotsManager] Caché expirada para {domain}, se volverá a descargar robots.txt")
+                logger.info(f"Caché expirada para {domain}, se volverá a descargar robots.txt")
 
         # ---- Descarga fresh ----
         try:
@@ -114,10 +117,10 @@ class RobotsManager:
             rp.parse(content.splitlines())
             cls._parsers[domain] = (rp, time.time())
             allowed = rp.can_fetch(user_agent, url)
-            print(f"[RobotsManager] {user_agent} puede acceder a {url} según robots.txt recién descargado: {allowed}")
+            logger.info(f"{user_agent} puede acceder a {url} según robots.txt recién descargado: {allowed}")
             return allowed
         except Exception as e:
-            print(f"[RobotsManager] ERROR al leer robots.txt de {domain}: {e}")
-            print(f"[RobotsManager] -> Permitiendo acceso por defecto (fallback seguro)")
+            logger.error(f"ERROR al leer robots.txt de {domain}: {e}")
+            logger.info(f"-> Permitiendo acceso por defecto (fallback seguro)")
             cls._parsers[domain] = (None, time.time())
             return True

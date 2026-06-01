@@ -1,29 +1,53 @@
+import argparse
 import sys
 import asyncio
 import json
+import logging
 from pathlib import Path
 from datetime import datetime
 
 # Asegurar que el paquete `src/` esté en el path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+# Configurar logging
+from src.logging_config import setup_logging
+setup_logging()
+logger = logging.getLogger("PopulateElasticsearch")
+
+from src.DI.config_container import ConfigContainer
 from src.DI.disperse_search_container import SearchContainer
 from src.DI.chunking_container import ChunkingContainer
 from src.DataAcquisitionModule.scrapedDocument import ScrapedDocument
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Poblar ElasticSearch a partir de un archivo JSONL")
+    parser.add_argument("--input-file", type=str, default="data/initial_corpus.jsonl",
+                        help="Ruta al archivo JSONL de entrada (por defecto: data/initial_corpus.jsonl)")
+    return parser.parse_args()
+
 # Contenedores
-search_container = SearchContainer()
-chunking_container = ChunkingContainer()
+_config_container = ConfigContainer()
+_search_container = SearchContainer()
+_chunking_container = ChunkingContainer()
+
+_search_container.override_providers(
+    settings=_config_container.settings,
+)
+
+_chunking_container.override_providers(
+    settings=_config_container.settings,
+)
 
 # Servicios
-chunking_service = chunking_container.chunking_service()   # servicio de chunking
-index_service = search_container.index_service()           # servicio de indexación (para chunks)
+chunking_service = _chunking_container.chunking_service()
+index_service = _search_container.index_service()
 
 async def main():
-    # Ruta al archivo JSONL
-    jsonl_path = Path("data") / "initial_corpus.jsonl"
+    args = parse_args()
+    jsonl_path = Path(args.input_file)
+
     if not jsonl_path.exists():
-        print(f"❌ Archivo no encontrado: {jsonl_path}")
+        logger.error(f"Archivo no encontrado: {jsonl_path}")
         return
 
     scraped_docs = []
@@ -35,7 +59,7 @@ async def main():
             try:
                 data = json.loads(line)
             except json.JSONDecodeError as e:
-                print(f"Error JSON en línea {line_num}: {e}")
+                logger.warning(f"Error JSON en línea {line_num}: {e}")
                 continue
 
             pub_date = data.get("published_date")
@@ -43,7 +67,7 @@ async def main():
                 try:
                     date_obj = datetime.fromisoformat(pub_date)
                 except ValueError:
-                    print(f"Fecha inválida en línea {line_num}: {pub_date}")
+                    logger.warning(f"Fecha inválida en línea {line_num}: {pub_date}")
                     date_obj = None
             else:
                 date_obj = None
@@ -59,19 +83,16 @@ async def main():
             scraped_docs.append(doc)
 
     if not scraped_docs:
-        print("No se encontraron documentos en el JSONL")
+        logger.warning("No se encontraron documentos en el JSONL")
         return
 
-    print(f"📄 Generando chunks a partir de {len(scraped_docs)} documentos...")
-    # Usa el servicio de chunking para generar todos los chunks
+    logger.info(f"Generando chunks a partir de {len(scraped_docs)} documentos...")
     all_chunks = chunking_service.chunk_documents(scraped_docs)
+    logger.info(f"Se generaron {len(all_chunks)} chunks en total.")
 
-    print(f"📦 Se generaron {len(all_chunks)} chunks en total.")
-
-    # Indexar los chunks en Elasticsearch (el índice se crea automáticamente si no existe)
-    print("🔄 Indexando chunks en Elasticsearch...")
+    logger.info("Indexando chunks en Elasticsearch...")
     await index_service.index_chunks(all_chunks)
-    print("✅ Indexación completada.")
+    logger.info("Indexación completada correctamente.")
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -8,6 +8,9 @@ from src.Common.Chunking.Application.persistence_service import ChunkPersistence
 from src.WebSearchModule.Domain.insufficiency_detector import InsufficientResultsDetector
 from src.RankingModule.Application.hybrid_search import FusionService  
 
+import logging
+logger = logging.getLogger("RAGModule.HybridRetrievalService") 
+
 class RetrieverService:
     def __init__(
         self,
@@ -29,17 +32,19 @@ class RetrieverService:
          
     async def retrieve(self, query: str, k: int , user_id: Optional[str] = None) -> List[HybridSearchResult]:
 
+        logger.info("Iniciando recuperación para query='%s', user=%s, k=%d", query, user_id, k)
+
         # Búsqueda local
         local_results = await self.fusion_service.hybrid_search(query, k=k, user_id=user_id)
-        print(f"Total resultados locales: {len(local_results)}")
 
         # Verificar calidad de resultados locales
         good_local = self.insufficiency_detector.filter_good_results(local_results)
-        print(f"Resultados 'buenos' locales: {len(good_local)}")
+        logger.info("Resultados locales calificados (filtro de calidad) | count=%d", len(good_local))
 
         # Determinar si los resultados locales son insuficientes
         is_insufficient, web_needed = self.insufficiency_detector.is_local_insufficient(len(good_local), k)
-        print(f"¿Insuficiente? {is_insufficient}, web_needed: {web_needed}")
+        logger.info("Evaluación de suficiencia local | insuficiente=%s, resultados_web_necesarios=%d", 
+                    is_insufficient, web_needed)
 
         # Si no es insuficiente, trabajar con los mejores resultados locales
         if not is_insufficient:
@@ -48,11 +53,12 @@ class RetrieverService:
             # Búsqueda web
             web_hybrids, web_chunks = await self.web_search.fetch_web_results(query, max_results=web_needed)
             # Guardar chunks web en segundo plano
+            logger.info("Indexación de chunks web programada en segundo plano | count=%d", len(web_chunks))
             if web_chunks:
                 asyncio.create_task(self._safe_store_chunks(web_chunks))
             results = self._merge_unique(good_local, web_hybrids)[:k]
 
-        # Re‑ranking opcional  
+        # Re‑ranking  
         if self.activate_reranking and len(results) > 0:
             results = await self.re_ranking_strategy.rerank(results, query=query)
 
@@ -64,8 +70,9 @@ class RetrieverService:
     async def _safe_store_chunks(self, chunks):
         try:
             await self.chunk_persistence.store_chunks(chunks)
+            logger.info("Chunks web persistidos correctamente | count=%d", len(chunks))
         except Exception as e:
-            print(f"Error indexando chunks web: {e}")
+            logger.error("Error al indexar chunks web | error=%s", str(e), exc_info=True)
 
     def _merge_unique(self, local, web):
         """Combina resultados locales y web, 
@@ -74,7 +81,6 @@ class RetrieverService:
         merged = []
         for item in web:
             if item.doc_id not in seen:
-                print(item.doc_id)
                 seen.add(item.doc_id)
                 merged.append(item)
         for item in local:
