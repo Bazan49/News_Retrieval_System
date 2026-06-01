@@ -13,19 +13,19 @@ class RRFFusionStrategy(FusionStrategy):
         dense_results: List[RetrievalResult]
     ) -> List[HybridSearchResult]:
         # Construir mapas de rango y score para cada documento
-        sparse_map = {doc.url: (rank, doc.score) for rank, doc in enumerate(sparse_results, start=1)}
-        dense_map = {doc.url: (rank, doc.score) for rank, doc in enumerate(dense_results, start=1)}
+        sparse_map = {doc.doc_id: (rank, doc.score) for rank, doc in enumerate(sparse_results, start=1)}
+        dense_map = {doc.doc_id: (rank, doc.score) for rank, doc in enumerate(dense_results, start=1)}
 
         # Calcular RRF scores
         rrf_scores = {}
         # Densos: primera ocurrencia
         for rank, doc in enumerate(dense_results, start=1):
-            doc_id = doc.url
+            doc_id = doc.doc_id
             if doc_id not in rrf_scores:
                 rrf_scores[doc_id] = 1 / (self.rrf_k + rank)
         # Dispersos: acumulando
         for rank, doc in enumerate(sparse_results, start=1):
-            doc_id = doc.url
+            doc_id = doc.doc_id
             rrf_scores[doc_id] = rrf_scores.get(doc_id, 0) + 1 / (self.rrf_k + rank)
 
         # Ordenar por puntaje RRF descendente
@@ -33,10 +33,10 @@ class RRFFusionStrategy(FusionStrategy):
         top_ids = [doc_id for doc_id, _ in ranked]
 
         # Mapa de objetos (prioridad: disperso, luego denso)
-        result_map = {doc.url: doc for doc in sparse_results}
+        result_map = {doc.doc_id: doc for doc in sparse_results}
         for doc in dense_results:
-            if doc.url not in result_map:
-                result_map[doc.url] = doc
+            if doc.doc_id not in result_map:
+                result_map[doc.doc_id] = doc
 
         # Construir resultados híbridos con información completa
         results = []
