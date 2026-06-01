@@ -4,6 +4,9 @@ from sentence_transformers import CrossEncoder
 from src.RankingModule.Domain.Entities.hybrid_search_result import HybridSearchResult
 from src.RankingModule.Domain.Interfaces.ranking_strategy import RankingStrategy
 
+import logging
+logger = logging.getLogger("RankingModule.CrossEncoderRankingStrategy") 
+
 class CrossEncoderRankingStrategy(RankingStrategy):
     def __init__(self, cross_encoder_model: CrossEncoder):
         self.cross_encoder_model = cross_encoder_model
@@ -12,7 +15,8 @@ class CrossEncoderRankingStrategy(RankingStrategy):
         if not query or not results:
             return results
 
-        print(f"Calculando cross-encoder para {len(results)} resultados...")
+        logger.info("Aplicando re‑ranking con cross‑encoder | entrada=%d", len(results))
+
         pairs = [(query, f"{r.title}\n\n{r.content}") for r in results]
         scores = await asyncio.to_thread(self.cross_encoder_model.predict, pairs)
 

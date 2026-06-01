@@ -2,6 +2,9 @@ from typing import Callable, List, Optional
 from src.RankingModule.Domain.Interfaces.scoring_strategy import ScoringStrategy
 from src.RankingModule.Domain.Entities.hybrid_search_result import HybridSearchResult, ResultSource
 
+import logging
+logger = logging.getLogger("RankingModule.RankingService") 
+
 class RankingService:
     """
     Servicio que calcula la prioridad de visualización (posicionamiento) de cada resultado
@@ -28,6 +31,8 @@ class RankingService:
         """
         Calcula final_score para cada resultado y ordena la lista de mayor a menor prioridad.
         """
+        logger.info("Aplicando posicionamiento final de los resultados | entrada=%d", len(results))
+
         if not results:
             return results
 

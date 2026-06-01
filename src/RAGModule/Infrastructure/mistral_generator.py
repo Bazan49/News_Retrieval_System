@@ -2,7 +2,7 @@ import httpx
 import logging
 from src.RAGModule.Domain.generator import BaseGenerator
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("RAGModule.MistralGenerator")
 
 class MistralGenerator(BaseGenerator):
     def __init__(

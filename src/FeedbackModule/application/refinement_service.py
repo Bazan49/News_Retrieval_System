@@ -62,11 +62,9 @@ class RefinementService:
         return filtered
 
     def expand_query(self, original_query: str, chunk_content: str) -> str:
-        print("antes del kw")
         keywords = self.extract_keywords(chunk_content)
         if not keywords:
             return original_query
-        print(f"Keywords extraídas para refinamiento: {keywords}")
 
         original_tokens = set(original_query.lower().split())
         new_terms = []
@@ -80,13 +78,10 @@ class RefinementService:
             return original_query
 
         expanded = f"{original_query} {' '.join(new_terms)}"
-        print("casi final")
         return expanded
 
     async def expand_query_async(self, original_query: str, chunk_content: str) -> str:
-        print("holaaa")
         return await asyncio.to_thread(self.expand_query, original_query, chunk_content)
-
 
     async def refine_search(
         self,

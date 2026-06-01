@@ -2,6 +2,9 @@ import requests
 import time
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
+import logging
+
+logger = logging.getLogger("DataAcquisitionModule.Fetcher")
 
 class Fetcher:
     """Módulo encargado de descargar páginas web y extraer enlaces."""
@@ -16,7 +19,7 @@ class Fetcher:
         for attempt in range(1, max_retries + 1):
 
             try:
-                print(f"\nDownloading ({attempt}/{max_retries}): {url}")
+                logger.info(f"Downloading ({attempt}/{max_retries}): {url}")
 
                 response = requests.get(url, timeout=8)
 
@@ -24,22 +27,22 @@ class Fetcher:
                     response.encoding = response.apparent_encoding
                     return response.text
 
-                print("Status error:", response.status_code)
+                logger.error(f"Status error: {response.status_code}")
 
             except requests.exceptions.Timeout:
-                print("Timeout:", url)
+                logger.error(f"Timeout: {url}")
 
             except requests.exceptions.ConnectionError:
-                print("Connection error:", url)
+                logger.error(f"Connection error: {url}")
 
             except Exception as e:
-                print("Error downloading:", url, e)
+                logger.error(f"Error downloading {url}: {e}")
 
             if attempt < max_retries:
-                print("Reintentando...")
+                logger.info("Reintentando...")
                 time.sleep(2)
 
-        print("Fallo al descargar después de", max_retries, "intentos:", url)
+        logger.error(f"Fallo al descargar después de {max_retries} intentos: {url}")
         return None
 
     @staticmethod

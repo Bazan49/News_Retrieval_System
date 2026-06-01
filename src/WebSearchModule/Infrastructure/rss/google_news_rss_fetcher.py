@@ -1,3 +1,4 @@
+import logging
 import feedparser
 import urllib.parse
 import asyncio
@@ -6,6 +7,7 @@ from typing import List
 from src.WebSearchModule.Domain.web_search_result import WebSearchResult
 from src.WebSearchModule.Domain.web_search_repository import WebSearchRepository
 
+logger = logging.getLogger("WebSearchModule.GoogleNewsRSSFetcher")
 
 class GoogleNewsRSSFetcher(WebSearchRepository):
     """
@@ -45,7 +47,7 @@ class GoogleNewsRSSFetcher(WebSearchRepository):
             )
             return results
         except Exception as e:
-            print(f"Error fetching Google News RSS: {e}")
+            logger.error("Error durante la búsqueda en Google News RSS | error=%s", str(e), exc_info=True)
             return []
     
     def _fetch_rss_sync(self, query: str, max_results: int) -> List[WebSearchResult]:
@@ -89,7 +91,7 @@ class GoogleNewsRSSFetcher(WebSearchRepository):
                 )
                 results.append(result)
             except Exception as e:
-                print(f"Error parsing entry: {e}")
+                logger.error("Error al procesar entrada RSS | error=%s", str(e), exc_info=False)
                 continue
         
         return results

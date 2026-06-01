@@ -1,7 +1,10 @@
+import logging
 from src.DataAcquisitionModule.crawler.crawler import Crawler
 from src.DataAcquisitionModule.scraper.scraper_factory import ScraperFactory
 from src.DataAcquisitionModule.storage.jsonl_storage_repository import JSONLRepository
 
+logger = logging.getLogger("DataAcquisitionModule.DataAcquisitionService")
+    
 class DataAcquisitionService:
     def __init__(self, max_pages=50, max_depth=3, delay=1, batch_size=10, output_file="data/corpus.jsonl"):
 
@@ -17,9 +20,9 @@ class DataAcquisitionService:
                 document = scraper.extract(url, html)
                 if document:
                     self.repository.save(document)
-                    print(f"[OK] Document extracted and saved: {url}")
+                    logger.info("Documento extraído y guardado | url=%s", url)
             except Exception as e:
-                print(f"[ERROR] Failed to process {url}: {e}")
+                logger.error("Error al procesar URL | url=%s, error=%s", url, str(e), exc_info=True)
 
         self.repository.flush()
-        print("Data acquisition finished.")
+        logger.info("Adquisición finalizada")

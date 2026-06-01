@@ -1,11 +1,12 @@
 import asyncio
+import logging
 from typing import List, Optional
-from src.RankingModule.Domain.Interfaces import fusion_strategy
-from src.RankingModule.Domain.Interfaces.ranking_strategy import RankingStrategy
 from src.RetrievalModule.Application.retrieval_service import RetrievalAppService
 from src.EmbeddingsModule.Application.vector_searcher_usecase import VectorSearcher
 from src.RankingModule.Domain.Interfaces.fusion_strategy import FusionStrategy
 from src.RankingModule.Domain.Entities.hybrid_search_result import HybridSearchResult
+
+logger = logging.getLogger("RankingModule.FusionService")
 
 class FusionService:
     """
@@ -28,12 +29,19 @@ class FusionService:
         k: int = 200,
         user_id: Optional[str] = None,
     ) -> List[HybridSearchResult]:
+        
         # Ejecutar ambas búsquedas en paralelo
+        logger.info("Lanzando tareas de búsqueda dispersa y densa en paralelo")
+
         sparse_task = self.sparse_service.retrieve(query, k=k)
         dense_task = self.dense_searcher.search(query, k=k)
         sparse_results, dense_results = await asyncio.gather(sparse_task, dense_task)
 
+        logger.info("Búsqueda dispersa completada | resultados=%d", len(sparse_results))
+        logger.info("Búsqueda densa completada | resultados=%d", len(dense_results))
+
         # Fusionar usando la estrategia inyectada
         fused = await self.fusion_strategy.merge(sparse_results, dense_results)
+        logger.info("Búsqueda híbrida completada | resultados=%d", len(fused))
 
         return fused

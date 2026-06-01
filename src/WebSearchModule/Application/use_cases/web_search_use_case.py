@@ -1,3 +1,4 @@
+import logging
 from typing import List, Tuple
 from src.Common.RetrievalResult.retrieval_result import RetrievalResult
 from src.Common.Chunking.Application.document_chunk import Chunk
@@ -5,6 +6,8 @@ from src.RankingModule.Domain.Entities.hybrid_search_result import HybridSearchR
 from src.DataAcquisitionModule.scraping_service import ScrapingService
 from googlenewsdecoder import new_decoderv1
 import asyncio
+
+logger = logging.getLogger("WebSearchModule.WebSearch")
 
 class WebSearch:
     def __init__(self, web_search_repo, chunking_service, scraping_service=ScrapingService()):
@@ -49,7 +52,7 @@ class WebSearch:
                         hybrids.append(hybrid)
                     return hybrids, chunks
                 except Exception as e:
-                    print(f"⚠️ Error procesando {raw.link}: {e}")
+                    logger.error("Error procesando {raw.link}: {e}", raw.link, str(e), exc_info=True)
                     return [], []  # Retorna vacío sin romper el flujo
 
         tasks = [process_one(raw) for raw in raw_results]
@@ -59,12 +62,13 @@ class WebSearch:
         for result in results:
             if isinstance(result, Exception):
                 # Esto no debería ocurrir porque capturamos dentro, pero por si acaso
-                print(f"Excepción no capturada: {result}")
+                logger.error("Excepción no capturada: {result}", result, exc_info=True)
                 continue
             hybrids, chunks = result
             all_hybrids.extend(hybrids)
             all_chunks.extend(chunks)
 
+        logger.info("Búsqueda web finalizada | resultados obtenidos=%d, chunks obtenidos=%d", len(all_hybrids), len(all_chunks))
         return all_hybrids, all_chunks
     
     @staticmethod
@@ -75,5 +79,5 @@ class WebSearch:
                 if decoded.get("status"):
                     return decoded["decoded_url"]
             except Exception as e:
-                print(f"Error decoding Google News URL: {e}")
+                logger.error("Error durante decodificación de URL de Google News | url=%s, error=%s", url, str(e), exc_info=False)
         return url
