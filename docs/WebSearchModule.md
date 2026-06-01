@@ -1,324 +1,150 @@
-# WebSearchModule - Módulo de Búsqueda Web
+# WebSearchModule – Módulo de Búsqueda Web con Fallback Automático
 
-## Descripción General
+El módulo de búsqueda web proporciona un mecanismo de **fallback automático** cuando los resultados del índice local (búsqueda híbrida) son insuficientes para responder a una consulta. Se integra directamente con el pipeline de recuperación, permitiendo obtener noticias frescas desde Google News RSS, procesarlas e indexarlas para futuras consultas.
 
-El WebSearchModule implementa un sistema de búsqueda web que se activa automáticamente cuando los resultados del índice local son insuficientes para responder a una consulta del usuario. Utiliza Google News RSS como fuente de datos y se integra completamente con el pipeline de recuperación de información.
+## Arquitectura y componentes principales
 
-## Arquitectura
+Siguiendo los principios de **Arquitectura Limpia**, el módulo se organiza en las siguientes capas:
 
-### Componentes Principales
+### 🔹 Capa de dominio
 
-#### 1. **Domain Layer**
+- **`WebSearchResult`** : entidad que representa un resultado de búsqueda web (título, enlace, fecha, resumen, fuente).
+- **`WebSearchRepository`** : interfaz abstracta para la obtención de resultados web (contrato que deben implementar las infraestructuras).
+- **`InsufficientResultsDetector`** : interfaz para evaluar si los resultados locales son insuficientes (debe implementarse con una lógica concreta).
 
-##### `WebSearchResult`
+### 🔹 Capa de infraestructura
 
-Entidad que representa un resultado de búsqueda web obtenido de RSS.
+- **`GoogleNewsRSSFetcher`** : implementación de `WebSearchRepository` que consulta el feed RSS de Google News de forma asíncrona (usa `feedparser` y `asyncio.to_thread`).
+- **`SimpleInsufficientResultsDetector`** : detector concreto que analiza la cantidad, calidad y contenido mínimo de los resultados locales. Proporciona métodos como `filter_good_results` y `is_local_insufficient`.
+- **`WebSearchDocumentProcessor`** : convierte `WebSearchResult` en `SearchDocument` (para indexación) y genera IDs cortos a partir de la URL.
+
+### 🔹 Capa de aplicación
+
+- **`WebSearch`** : caso de uso que, a partir de una consulta, obtiene resultados web, limpia las URLs de Google News, realiza scraping del contenido y genera trozos (`Chunk`) y resultados híbridos (`HybridSearchResult`) listos para ser combinados con resultados locales.
+- **`WebFallbackHybridSearchService`** : servicio orquestador principal que coordina:
+  - Búsqueda híbrida local (a través de `FusionService`).
+  - Filtrado de resultados “buenos” usando el detector.
+  - Activación de la búsqueda web si los resultados locales son insuficientes.
+  - Almacenamiento asíncrono de los trozos web (indexación en el sistema de chunks).
+  - Fusión final de resultados (web + locales) evitando duplicados por URL.
+
+La **inyección de dependencias** se realiza mediante un contenedor (`WebSearchContainer`) que registra las dependencias necesarias (repositorio RSS, detector, procesador, etc.) y las proporciona al orquestador.
+
+## Flujo completo de búsqueda con fallback web
+
+El siguiente diagrama representa el flujo que sigue una consulta cuando se utiliza `WebFallbackHybridSearchService`:
+```text
+Consulta del usuario
+↓
+┌──────────────────────────────────────────┐
+│ Búsqueda híbrida local (FusionService)   │
+└──────────────────────────────────────────┘
+↓
+┌──────────────────────────────────────────┐
+│ Filtrar resultados "buenos" usando       │
+│ SimpleInsufficientResultsDetector        │
+│(rrf_score > threshold y contenido mínimo)│
+└──────────────────────────────────────────┘
+↓
+┌──────────────────────────────────────────┐
+│ ¿Cantidad de resultados buenos ≥ k?      │
+└──────────────────────────────────────────┘
+│
+No │ Sí
+↓   ↓
+┌──────────────────┐     ┌──────────────────┐
+│ Activar fallback │     │ Devolver         │
+│ web              │     │ resultados       │
+└──────────────────┘     │ locales          │
+                         └──────────────────┘
+↓
+┌──────────────────────────────────────────┐
+│ WebSearch.fetch_web_results()            │
+│ - Obtener resultados RSS                 │
+│ - Limpiar URLs de Google News            │
+│ - Scraping del contenido                 │
+│ - Generar Chunk                          │
+│ - Crear HybridSearchResult               │
+└──────────────────────────────────────────┘
+↓
+┌──────────────────────────────────────────┐
+│ Almacenar los Chunks en el sistema       │
+│ (ChunkPersistenceService)                │
+│ (se ejecuta en segundo plano)            │
+└──────────────────────────────────────────┘
+↓
+┌──────────────────────────────────────────┐
+│ Fusionar resultados: web + locales       │
+│ (se priorizan los web)                   │
+└──────────────────────────────────────────┘
+↓
+┌──────────────────────────────────────────┐
+│ Devolver top‑k resultados combinados     │
+└──────────────────────────────────────────┘
+```
+
+## Componentes clave en detalle
+
+### 1. `WebFallbackHybridSearchService`
+
+Orquesta todo el flujo. Recibe en su constructor:
+
+- `fusion_service` (búsqueda híbrida local)
+- `web_search` (caso de uso de búsqueda web)
+- `chunk_persistence` (para indexar los nuevos trozos)
+- `insufficiency_detector` (para evaluar calidad y necesidad de fallback)
+- `settings` (configuración: umbrales, etc.)
+
+**Método principal**:
 
 ```python
-@dataclass
-class WebSearchResult:
-    title: str          # Título del artículo
-    link: str          # URL del artículo
-    published: datetime # Fecha de publicación
-    summary: str       # Resumen del artículo
-    source: str        # Fuente RSS
+async def search(query: str, k: int = 10, user_id: Optional[str] = None) -> List[HybridSearchResult]
 ```
+## 2. WebSearch (caso de uso)
 
-##### `WebSearchRepository` (Interface)
+Se encarga de la obtención y procesamiento completo de resultados web. Utiliza el repositorio RSS, un servicio de scraping y un servicio de chunking. Devuelve una tupla `(lista_de_HybridSearchResult, lista_de_Chunk)`.
 
-Define el contrato para obtener resultados de búsqueda web.
+### `fetch_web_results(query, max_results)`
 
-```python
-async def search(query: str, max_results: int = 10) -> List[WebSearchResult]
-```
+- Obtiene los RSS items.
+- Para cada uno:
+  - Limpia la URL de Google News (usa `googlenewsdecoder`).
+  - Realiza scraping del contenido completo.
+  - Divide el documento en trozos (`Chunk`).
+  - Convierte cada trozo en un `HybridSearchResult` (con `source_type=ResultSource.WEB` y `rrf_score=0.0`).
+- Retorna todos los `HybridSearchResult` y `Chunk` generados.
 
-##### `InsufficientResultsDetector` (Interface)
+## 3. `SimpleInsufficientResultsDetector`
 
-Determina si los resultados locales son insuficientes para activar búsqueda web.
+Implementa la lógica para decidir si los resultados locales son suficientes. Además de los métodos de la interfaz (`is_insufficient`, `get_insufficiency_score`), proporciona:
 
-```python
-async def is_insufficient(query: str, retrieved_results: List[Dict], threshold: float) -> bool
-async def get_insufficiency_score(query: str, retrieved_results: List[Dict]) -> float
-```
+- `filter_good_results(results)` : devuelve solo aquellos resultados que superan el umbral `good_rrf_threshold`, tienen contenido mínimo y título no vacío.
+- `is_local_insufficient(good_local_count, k, extra=5)` : calcula si hacen falta resultados web (si `good_local_count < k`) y cuántos se necesitan (agregando un margen extra).
 
-#### 2. **Infrastructure Layer**
+Los umbrales (`good_rrf_threshold`, `min_content_length`) se obtienen de las `settings` o se pasan directamente.
 
-##### `GoogleNewsRSSFetcher`
+## 4. `GoogleNewsRSSFetcher`
 
-Implementación de `WebSearchRepository` que usa feedparser para obtener noticias de Google News RSS.
+Implementación concreta de `WebSearchRepository`. Parámetros de configuración:
 
-- **Características:**
-  - Búsqueda asincrónica (no bloquea el event loop)
-  - Manejo de múltiples idiomas (es-419 por defecto)
-  - Parseo automático de fechas
-  - Manejo robusto de errores
+- `lang`: código de idioma (por defecto `es-419`).
+- `country`: código de país (por defecto `US`).
 
-```python
-fetcher = GoogleNewsRSSFetcher(lang="es-419", country="US")
-results = await fetcher.search("crisis política", max_results=10)
-```
+Construye la URL de Google News RSS con los parámetros y parsea el feed usando `feedparser`. La ejecución se realiza en un `ThreadPool` para no bloquear el event loop (`asyncio.to_thread`).
 
-##### `SimpleInsufficientResultsDetector`
+## 5. `WebSearchDocumentProcessor`
 
-Implementación de `InsufficientResultsDetector` basada en criterios simples pero efectivos.
+Utilizado principalmente para **indexar** los resultados web (almacenarlos en el sistema de búsqueda). Convierte un `WebSearchResult` en un `SearchDocument` (con campos `source`, `url`, `title`, `content`, `authors` nulos y `date`). También genera un ID corto (`web_<hash16>`) para cada documento.
 
-**Criterios de Insuficiencia:**
+## Integración con el pipeline principal
 
-1. Número mínimo de resultados (default: 3)
-2. Puntuación promedio mínima (default: -50.0)
-3. Sin resultados locales = máxima insuficiencia
+El módulo de búsqueda web no se utiliza de forma aislada, sino como parte del servicio de búsqueda híbrida extendido. En el contenedor de dependencias (`WebSearchContainer`) se registran:
 
-**Score = (60% cantidad) + (40% calidad)**
+- `google_news_rss_fetcher` (con idioma y país)
+- `insufficiency_detector` (con umbrales ajustables)
+- `web_search_document_processor`
+- `web_search` (caso de uso)
+- `web_fallback_hybrid_search_service` (orquestador)
 
-```python
-detector = SimpleInsufficientResultsDetector(
-    min_results=3,
-    min_score_threshold=-50.0,
-    empty_results_insufficient=True
-)
-score = await detector.get_insufficiency_score(query, results)
-is_insufficient = await detector.is_insufficient(query, results, threshold=0.5)
-```
-
-##### `WebSearchDocumentProcessor`
-
-Convierte `WebSearchResult` en `SearchDocument` para indexación.
-
-```python
-processor = WebSearchDocumentProcessor()
-search_doc = processor.process_web_result(web_result)
-search_docs = processor.process_batch(web_results)
-```
-
-#### 3. **Application Layer**
-
-##### `WebSearchService`
-
-Servicio principal que orquesta la búsqueda web integrada con recuperación.
-
-**Responsabilidades:**
-
-- Detectar insuficiencia de resultados locales
-- Ejecutar búsqueda web como complemento
-- Procesar e indexar resultados web
-- Combinar resultados evitando duplicados
-
-**Método Principal:**
-
-```python
-result = await web_search_service.search_with_fallback(
-    query="política Venezuela",
-    local_results=local_search_results,
-    web_results_limit=5,
-    insufficiency_threshold=0.5,
-    store_web_results=True
-)
-
-# Retorna:
-{
-    "local_results": [...],           # Resultados del índice
-    "web_results": [...],             # Resultados webSearch
-    "combined_results": [...],        # Combinados y ordenados
-    "web_search_triggered": bool,     # Si se activó búsqueda web
-    "insufficiency_score": float,     # Score 0-1
-    "total_results": int              # Total de resultados
-}
-```
-
-## Flujo de Integración
-
-### Caso 1: Resultados Suficientes
-
-```
-Usuario Query
-    ↓
-Recuperación Local → Suficientes → Devolver Resultados
-    ↓
-No activa web search
-```
-
-### Caso 2: Resultados Insuficientes
-
-```
-Usuario Query
-    ↓
-Recuperación Local → Insuficientes → Detector activado
-    ↓
-Google News RSS → Obtener artículos
-    ↓
-Procesar → Convertir a SearchDocument
-    ↓
-Indexar → Almacenar en ElasticSearch
-    ↓
-Combinar resultados + Evitar duplicados
-    ↓
-Devolver Resultados (Local + Web)
-```
-
-## Uso Práctica
-
-### Integración con RetrievalModule
-
-```python
-from WebSearchModule.Application.web_search_service import WebSearchService
-from DI.continer import SearchContainer
-
-# Inicializar container
-container = SearchContainer()
-web_search_service = container.web_search_service()
-retrieval_service = container.retrieval_service()
-
-# Búsqueda
-query = "últimas noticias economía"
-local_results = await retrieval_service.retrieve(query, k=10)
-
-# Búsqueda con fallback automático
-result = await web_search_service.search_with_fallback(
-    query=query,
-    local_results=local_results,
-    web_results_limit=10,
-    insufficiency_threshold=0.5
-)
-
-print(f"Total resultados: {result['total_results']}")
-print(f"Web search activada: {result['web_search_triggered']}")
-```
-
-### Solo Búsqueda Web
-
-```python
-web_results = await web_search_service.web_search_repo.search(
-    "crisis diplomática",
-    max_results=15
-)
-
-for result in web_results:
-    print(f"{result.title}")
-    print(f"  {result.link}")
-    print(f"  {result.published}")
-```
-
-### Detectar Insuficiencia
-
-```python
-detector = web_search_service.insufficiency_detector
-
-# Evaluar resultados específicos
-score = await detector.get_insufficiency_score(query, local_results)
-if score > 0.5:
-    print("Resultados insuficientes, activar búsqueda web")
-```
-
-## Configuración
-
-### En el Container
-
-```python
-# DI/continer.py
-insufficiency_detector = providers.Singleton(
-    SimpleInsufficientResultsDetector,
-    min_results=3,           # Mínimo de resultados
-    min_score_threshold=-50.0,  # Puntuación mínima
-    empty_results_insufficient=True
-)
-
-web_search_fetcher = providers.Singleton(
-    GoogleNewsRSSFetcher,
-    lang="es-419",    # Idioma
-    country="US"      # País
-)
-```
-
-### Parámetros de `search_with_fallback`
-
-| Parámetro                 | Tipo  | Default | Descripción                   |
-| ------------------------- | ----- | ------- | ----------------------------- |
-| `query`                   | str   | -       | Consulta del usuario          |
-| `local_results`           | List  | -       | Resultados del índice local   |
-| `web_results_limit`       | int   | 5       | Máximo de resultados web      |
-| `insufficiency_threshold` | float | 0.5     | Umbral (0-1) para activar web |
-| `store_web_results`       | bool  | True    | Indexar resultados web        |
-
-## Ejemplos de Casos de Uso
-
-### Caso 1: Noticias de Actualidad
-
-```
-Query: "últimas noticias"
-→ Índice local: Documentos históricos
-→ Detector: Score 0.8 (muy insuficiente)
-→ Activar: Google News RSS
-→ Resultado: Noticias recientes + históricos
-```
-
-### Caso 2: Tema Cubierto Localmente
-
-```
-Query: "constitución política"
-→ Índice local: 15 documentos relevantes, score -20
-→ Detector: Score 0.0 (suficiente)
-→ Activar: No
-→ Resultado: Solo resultados locales
-```
-
-### Caso 3: Tema Parcialmente Cubierto
-
-```
-Query: "inflación Venezuela"
-→ Índice local: 1-2 documentos, score -60
-→ Detector: Score 0.6 (insuficiente)
-→ Activar: Google News RSS
-→ Almacenar: Nuevos artículos indexados
-```
-
-## Extensiones Posibles
-
-### 1. Múltiples Fuentes RSS
-
-```python
-class MultiSourceWebSearchRepository(WebSearchRepository):
-    async def search(self, query: str, max_results: int) -> List[WebSearchResult]:
-        # Buscar en múltiples feeds
-```
-
-### 2. Detector Avanzado
-
-```python
-class MLInsufficientResultsDetector(InsufficientResultsDetector):
-    # Usar ML para evaluar insuficiencia
-```
-
-### 3. Caché de Resultados
-
-```python
-class CachedWebSearchRepository(WebSearchRepository):
-    # Cachear resultados para queries recientes
-```
-
-### 4. Ranking Inteligente
-
-```python
-def _combine_results_intelligent(self, local, web):
-    # Usar algorithms para mejor ranking
-```
-
-## Consideraciones Importantes
-
-### Rendimiento
-
-- La búsqueda web es asincrónica (no bloquea)
-- Se ejecuta bajo demanda (cuando es necesario)
-- Los resultados se indexan para reutilización
-
-### Privacidad
-
-- Google News RSS es público
-- No se almacenan datos personales
-- Respeta términos de servicio de Google
-
-### Exactitud
-
-- Los resultados RSS dependen de Google News
-- Se combina con resultados locales para mayor confiabilidad
-- Los criterios de insuficiencia pueden ajustarse
+El orquestador se inyecta en los endpoints de la API (por ejemplo, `/hybrid/web`) y sustituye a la búsqueda híbrida local cuando se desea el fallback automático.
 
