@@ -1,43 +1,19 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
-
+from typing import List, Tuple
+from src.RankingModule.Domain.Entities.hybrid_search_result import HybridSearchResult
 
 class InsufficientResultsDetector(ABC):
-    """
-    Interfaz para determinar si los resultados de búsqueda locales 
-    son insuficientes para responder una consulta.
-    """
-    
+    """Detecta si los resultados locales son insuficientes y activa búsqueda web."""
+
     @abstractmethod
-    async def is_insufficient(
-        self, 
-        query: str, 
-        retrieved_results: List[Dict[str, Any]],
-        threshold: float = 0.5
-    ) -> bool:
-        """
-        Determina si los resultados recuperados son insuficientes.
-        
-        Args:
-            query: Consulta del usuario
-            retrieved_results: Resultados recuperados del índice local
-            threshold: Umbral de relevancia/cobertura (0-1)
-            
-        Returns:
-            True si se considera insuficiente, False si hay suficiente información
-        """
+    def filter_good_results(self, results: List[HybridSearchResult]) -> List[HybridSearchResult]:
+        """Filtra los resultados que se consideran de suficiente calidad."""
         pass
-    
+
     @abstractmethod
-    async def get_insufficiency_score(
-        self,
-        query: str,
-        retrieved_results: List[Dict[str, Any]]
-    ) -> float:
+    def is_local_insufficient(self, good_local_count: int, k: int, extra: int = 5) -> Tuple[bool, int]:
         """
-        Calcula un score que indica qué tan insuficientes son los resultados (0-1).
-        
-        Returns:
-            Score donde 0 = suficiente, 1 = muy insuficiente
+        Decide si la cantidad de resultados 'buenos' es insuficiente.
+        Retorna (insufficient, web_needed).
         """
         pass

@@ -29,7 +29,7 @@ class RAGOrchestratorService:
     ) -> RAGResult:
         
         # Recuperar documentos relevantes (ya ordenados)
-        hybrid_results = await self.retriever.retrieve(query, k=k*3, user_id=user_id)
+        hybrid_results = await self.retriever.retrieve(query, k=k*2, user_id=user_id)
 
         # Generar respuesta RAG
         logger.info("Generando respuesta RAG")
