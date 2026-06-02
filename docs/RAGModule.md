@@ -29,7 +29,7 @@ Dentro de nuestra arquitectura, el módulo RAG no implementa internamente las fa
 El módulo RAG sigue una **arquitectura limpia** con tres capas bien diferenciadas y una clara separación de responsabilidades:
 
 - **Capa de dominio**: Define los objetos centrales (`RAGResult`, `RAGContextItem`) y las interfaces para la generación (`BaseGenerator`).
-- **Capa de infraestructura**: Implementa el generador concreto (`GroqGenerator`) que se comunica con la API de Groq.
+- **Capa de infraestructura**: Implementa el generador concreto (`MistralGenerator`).
 - **Capa de aplicación**: Contiene los servicios que orquestan el pipeline:
   - `RetrieverService`: responsable de la recuperación de documentos (búsqueda híbrida, fusión RRF, web, re‑ranking y posicionamiento).
   - `RAGGeneratorService`: Construye el contexto, genera los prompts y llama al LLM para obtener la respuesta.
@@ -81,7 +81,7 @@ Además de la estructura del prompt, el sistema ajusta diversos parámetros del 
 
 ## Selección del modelo generativo
 
-El sistema utiliza la infraestructura de inferencia proporcionada por **`Groq`** y el modelo **`llama-3.3-70b-versatile`**. La elección de esta combinación responde a dos factores principales: su buen rendimiento en tareas de comprensión y generación en español, y la baja latencia ofrecida por la plataforma, característica especialmente relevante en aplicaciones interactivas.
+El sistema utiliza la infraestructura de inferencia proporcionada por `Mistral AI` y el modelo `mistral-small-latest`. La elección de esta combinación responde a varios factores: su buen rendimiento en tareas de comprensión y generación en español, la baja latencia ofrecida por la plataforma (esencial en aplicaciones interactivas), y la facilidad de integración.
 
 ## Configurabilidad y extensibilidad
 
