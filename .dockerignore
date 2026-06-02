@@ -1,0 +1,14 @@
+venv_sri
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+sqlite_data
+users.db
+.env
+.git
+.gitignore
+.dockerignore
+.vscode
+.idea
