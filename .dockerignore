@@ -1,14 +1,37 @@
-venv_sri
-__pycache__
-*.pyc
-*.pyo
-*.pyd
-*.sqlite3
-sqlite_data
-users.db
+# caché de Hugging Face (modelos descargados)
+hf_cache/
+
+# volúmenes y datos persistentes locales 
+sqlite_data/
+
+# logs
+*.log
+logs/
+
+# archivos de entorno 
 .env
-.git
-.gitignore
+.env.*
+
+# cachés de Python e IDEs 
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# directorios de control de versiones y configuración local
+.git/
+.vscode/
+.idea/
+*.swp
+
+# entorno virtual
+venv/
+venv_sri/
+env/
+
+# archivos de Docker (no necesarios para la imagen)
 .dockerignore
-.vscode
-.idea
+Dockerfile
+docker-compose*.yml
