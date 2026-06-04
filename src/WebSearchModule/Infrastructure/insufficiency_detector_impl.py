@@ -19,6 +19,8 @@ class SimpleInsufficientResultsDetector(InsufficientResultsDetector):
                 return True
             else:
                 return False
+        elif result.sparse_rank is not None:
+            return True
         else:
             return False
 

@@ -16,6 +16,7 @@ class WebSearchContainer(containers.DeclarativeContainer):
 
     insufficiency_detector = providers.Singleton(
         SimpleInsufficientResultsDetector,
+        max_dense_distance=settings.provided.web_search_max_dense_distance
     )
 
     # Aplicación

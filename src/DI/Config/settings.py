@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     # WebSearchModule 
     google_news_lang: str = "es-419"
     google_news_country: str = "US"
+    web_search_max_dense_distance: float = 0.6
 
     # Umbral para considerar un resultado local como "bueno" (RRF score)
     good_rrf_threshold: float = 0.01
