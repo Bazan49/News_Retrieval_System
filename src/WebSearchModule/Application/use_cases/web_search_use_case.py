@@ -56,19 +56,19 @@ class WebSearch:
                     return [], []  # Retorna vacío sin romper el flujo
 
         tasks = [process_one(raw) for raw in raw_results]
-        # return_exceptions=True por si acaso (doble seguridad)
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
+        doc_count = 0
         for result in results:
-            if isinstance(result, Exception):
-                # Esto no debería ocurrir porque capturamos dentro, pero por si acaso
-                logger.error("Excepción no capturada: {result}", result, exc_info=True)
-                continue
             hybrids, chunks = result
+            if hybrids:                    
+                doc_count += 1
             all_hybrids.extend(hybrids)
             all_chunks.extend(chunks)
 
-        logger.info("Búsqueda web finalizada | resultados obtenidos=%d, chunks obtenidos=%d", len(all_hybrids), len(all_chunks))
+        logger.info("Búsqueda web finalizada | documentos obtenidos: %d", doc_count)
+        logger.info("Total fragmentos (chunks) generados = %d", len(all_hybrids))
+
         return all_hybrids, all_chunks
     
     @staticmethod
