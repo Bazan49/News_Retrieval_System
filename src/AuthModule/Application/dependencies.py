@@ -14,15 +14,17 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> str | None:
         return None
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
-        username: str = payload.get("sub")
-        if username is None:
+        username = payload.get("sub")
+        if not username:
             return None
-        repo = SQLiteUserRepository()
+        repo = SQLiteUserRepository(db_path=settings.users_db_path)
         user = await repo.get_by_username(username)
         if user and not user.disabled:
             return username
-    except JWTError:
-        pass
+    except JWTError as e:
+        print(f"Error JWT: {e}")
+    except Exception as e:
+        print(f"Otro error: {e}")
     return None
 
 async def get_current_user_optional(token: str = Depends(oauth2_scheme)) -> Optional[str]:

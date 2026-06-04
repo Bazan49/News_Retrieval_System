@@ -1,0 +1,50 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.3.1
+    container_name: sri_elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD}
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - network.host=0.0.0.0
+      - http.host=0.0.0.0
+    ports:
+      - "${ELASTICSEARCH_PORT_HOST:-9200}:9200"
+    volumes:
+      - ./docker/elasticsearch/log4j2.properties:/usr/share/elasticsearch/config/log4j2.properties:ro
+
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: sri_chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+    ports:
+      - "${CHROMA_PORT_HOST:-8001}:8000"
+    volumes:
+      - chroma_data:/data
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sri_api
+    ports:
+      - "${APP_PORT_HOST:-8000}:8000"
+    depends_on:
+      - elasticsearch
+      - chroma
+    env_file:
+      - .env
+    environment:
+      - ELASTICSEARCH_HOSTS=["https://elasticsearch:9200"]
+      - CHROMA_HOST=chroma
+      - CHROMA_PORT=8000
+      - HF_HOME=/root/.cache/huggingface
+    volumes:
+      - .:/app:delegated
+      - ./hf_cache:/root/.cache/huggingface
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  chroma_data:
+    driver: local

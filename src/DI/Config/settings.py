@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     # WebSearchModule 
     google_news_lang: str = "es-419"
     google_news_country: str = "US"
+    web_search_max_dense_distance: float = 0.6
 
     # Umbral para considerar un resultado local como "bueno" (RRF score)
     good_rrf_threshold: float = 0.01
@@ -57,9 +58,9 @@ class Settings(BaseSettings):
 
     #  Ranking y Posicionamiento 
     rrf_k: int = 60
-    w_relevance: float = 0.5
-    w_personalization: float = 0.25
-    w_recency: float = 0.25
+    w_relevance: float = 0.6
+    w_personalization: float = 0.2
+    w_recency: float = 0.2
     recency_decay_days: int = 30
     cross_encoder_model_name_or_path: str = "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
     activate_cross_encoder_for_relevance: bool = True

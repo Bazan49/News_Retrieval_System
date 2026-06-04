@@ -16,12 +16,7 @@ class WebSearchContainer(containers.DeclarativeContainer):
 
     insufficiency_detector = providers.Singleton(
         SimpleInsufficientResultsDetector,
-        min_results=3,
-        min_score_threshold=-50.0,
-        empty_results_insufficient=True,
-        good_rrf_threshold=settings.provided.good_rrf_threshold,   
-        min_content_length=settings.provided.min_content_length,
-        settings=settings
+        max_dense_distance=settings.provided.web_search_max_dense_distance
     )
 
     # Aplicación

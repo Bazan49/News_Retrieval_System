@@ -25,11 +25,6 @@ _embeddings_container.override_providers(
     settings=_config_container.settings
 )
 
-# Inyectar las dependencias en el contenedor de búsqueda web
-_web_container.override_providers(
-    settings=_config_container.settings,
-)
-
 # Inyectar las dependencias en el contenedor de búsqueda dispersa (LMIR + Elasticsearch)
 _search_container.override_providers(
     settings=_config_container.settings,
