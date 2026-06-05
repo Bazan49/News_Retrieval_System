@@ -1,6 +1,5 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
-from src.AuthModule.Application.dependencies import get_current_user_optional
 from src.API.schemas.recommendation_request import RecommendationRequestSchema
 from src.API.dependencies import get_recommender
 from src.API.schemas.recommendation_response import RecommendationResponse
@@ -13,11 +12,10 @@ router = APIRouter(prefix="/recommend", tags=["recommendation"])
 @router.get("/for-user", response_model=RecommendationResponse)
 async def recommend_for_user(
     req: RecommendationRequestSchema = Depends(),   # Toma todos los parámetros de consulta
-    current_user: Optional[str] = Depends(get_current_user_optional),
     recommender: ContentRecommender = Depends(get_recommender)
 ):
     # El token tiene prioridad sobre el user_id enviado en la query
-    final_user_id = current_user or req.user_id
+    final_user_id = req.user_id
     if not final_user_id:
         raise HTTPException(status_code=400, detail="User ID required (via token or query parameter)")
 

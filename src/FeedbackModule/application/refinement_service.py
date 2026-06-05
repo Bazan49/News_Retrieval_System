@@ -3,6 +3,7 @@ import re
 import numpy as np
 from typing import List, Optional, Tuple
 from keybert import KeyBERT
+from src.RAGModule.Domain.rag_result import RAGResult
 from src.EmbeddingsModule.Domain.embedder import BaseEmbedder
 from src.FeedbackModule.domain.entities import RefinementResult
 
@@ -118,5 +119,5 @@ class RefinementService:
         expanded_query = f"{original_query} {' '.join(new_terms)}" if new_terms else original_query
 
         # Ejecutar nueva búsqueda
-        new_results = await search_service.hybrid_search(expanded_query, k=10)
-        return RefinementResult(original_query=original_query, expanded_query=expanded_query, results=new_results)
+        new_results = await search_service.search(expanded_query, k=10)
+        return RefinementResult(original_query=original_query, expanded_query=expanded_query, results=new_results.sources, answer=new_results.answer)
