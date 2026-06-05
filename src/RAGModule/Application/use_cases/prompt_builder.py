@@ -18,9 +18,8 @@ Mejor: "Los artículos mencionan X, pero no especifican Y".
 6. Cuando cites una fuente, intégrala de forma natural (ej. "Según BBC News, ...").
 
 Formato de respuesta:
-- Usa párrafos breves y claros.
-- Si la consulta requiere enumerar varios puntos, puedes usar viñetas.
-- Extensión: 2-3 párrafos, suficiente para dar un panorama general.
+- Usa párrafos BREVES, COCISOS y CLAROS.
+- Extensión: Máximo 2 párrafos, suficiente para dar un panorama general.
 - No repitas información de forma redundante.
 
 Ahora responde a la pregunta del usuario basándote en los fragmentos proporcionados."""
