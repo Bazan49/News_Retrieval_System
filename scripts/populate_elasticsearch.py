@@ -42,6 +42,16 @@ _chunking_container.override_providers(
 chunking_service = _chunking_container.chunking_service()
 index_service = _search_container.index_service()
 
+async def get_document_count() -> int:
+    try:
+        # Obtener el cliente desde el repositorio
+        repo = _search_container.index_repository() 
+        response = await repo.client.count(index=repo.index_name)
+        return response.get("count", 0)
+    except Exception as e:
+        logger.warning(f"No se pudo obtener el conteo: {e}")
+        return 0
+
 async def main():
     args = parse_args()
     jsonl_path = Path(args.input_file)
@@ -49,6 +59,10 @@ async def main():
     if not jsonl_path.exists():
         logger.error(f"Archivo no encontrado: {jsonl_path}")
         return
+
+    # Mostrar cuántos documentos hay antes de indexar
+    before_count = await get_document_count()
+    logger.info(f"Documentos en el índice antes de la indexación: {before_count}")
 
     scraped_docs = []
     with open(jsonl_path, "r", encoding="utf-8") as f:
@@ -93,6 +107,10 @@ async def main():
     logger.info("Indexando chunks en Elasticsearch...")
     await index_service.index_chunks(all_chunks)
     logger.info("Indexación completada correctamente.")
+
+    # Mostrar cuántos documentos hay después de indexar
+    after_count = await get_document_count()
+    logger.info(f"Documentos en el índice después de la indexación: {after_count}")
 
 if __name__ == "__main__":
     asyncio.run(main())
