@@ -18,3 +18,4 @@ class RefinementResult:
     original_query: str
     expanded_query: str
     results: Optional[List[HybridSearchResult]]
+    answer: Optional[str] = None
