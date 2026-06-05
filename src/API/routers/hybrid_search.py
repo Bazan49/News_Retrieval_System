@@ -11,8 +11,6 @@ router = APIRouter(prefix="/hybrid", tags=["hybrid"])
 @router.get("/", response_model=HybridSearchResponseSchema)
 async def hybrid_search_local(
     params: SearchQueryParams = Depends(),
-    current_user: Optional[str] = Depends(get_current_user_optional),
-    user_id_query: Optional[str] = Query(None, alias="user_id", description="ID de usuario (opcional, para anónimos)"),
     service = Depends(get_hybrid_service),
     history_repo = Depends(get_search_history_repo)
 ):
@@ -23,7 +21,7 @@ async def hybrid_search_local(
     - Si no hay ninguno, la búsqueda es anónima (no se guarda historial).
     """
     # Determinar el user_id: prioriza el token
-    user_id = current_user or user_id_query
+    user_id = params.user_id
     # Guardar historial si hay user_id
     if user_id:
         await history_repo.save_query(user_id, params.q)
@@ -34,11 +32,10 @@ async def hybrid_search_local(
 @router.get("/web", response_model=HybridSearchResponseSchema)
 async def hybrid_search_web_extended(
     params: SearchQueryParams = Depends(),
-    current_user: Optional[str] = Depends(get_current_user_optional),
     service = Depends(get_web_extended_hybrid),
     history_repo = Depends(get_search_history_repo)
 ):
-    user_id = current_user or params.user_id
+    user_id = params.user_id
     if user_id:
         await history_repo.save_query(user_id, params.q)
     results = await service.retrieve(params.q, k=params.k, user_id=user_id)
