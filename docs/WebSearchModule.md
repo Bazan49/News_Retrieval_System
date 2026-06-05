@@ -1,150 +1,66 @@
-# WebSearchModule – Módulo de Búsqueda Web con Fallback Automático
+# Módulo de Búsqueda Web
 
-El módulo de búsqueda web proporciona un mecanismo de **fallback automático** cuando los resultados del índice local (búsqueda híbrida) son insuficientes para responder a una consulta. Se integra directamente con el pipeline de recuperación, permitiendo obtener noticias frescas desde Google News RSS, procesarlas e indexarlas para futuras consultas.
+El **Módulo de Búsqueda Web** complementa la recuperación local cuando los resultados del corpus indexado son insuficientes. Se activa automáticamente al detectar que la cantidad o calidad de los documentos locales no alcanza para satisfacer la consulta del usuario. Obtiene noticias frescas desde fuentes externas (Google News RSS), las procesa (descarga, extrae contenido, chunkifica) y las integra en la lista de resultados, además de indexarlas de forma asíncrona para futuras consultas.
 
 ## Arquitectura y componentes principales
 
-Siguiendo los principios de **Arquitectura Limpia**, el módulo se organiza en las siguientes capas:
+El módulo sigue una **arquitectura limpia** con separación en capas:
 
-### 🔹 Capa de dominio
+- **Capa de dominio**: Define los contratos abstractos.
+  - `WebSearchRepository`: declara la operación `search(query, max_results)`.
+  - `InsufficientResultsDetector`: interfaz para evaluar si los resultados locales son insuficientes.
 
-- **`WebSearchResult`** : entidad que representa un resultado de búsqueda web (título, enlace, fecha, resumen, fuente).
-- **`WebSearchRepository`** : interfaz abstracta para la obtención de resultados web (contrato que deben implementar las infraestructuras).
-- **`InsufficientResultsDetector`** : interfaz para evaluar si los resultados locales son insuficientes (debe implementarse con una lógica concreta).
+- **Capa de infraestructura**: Implementa los contratos con tecnologías concretas.
+  - `GoogleNewsRSSFetcher`: implementa `WebSearchRepository` usando el feed RSS de Google News..
+  - `SimpleInsufficientResultsDetector`: implementación concreta de `InsufficientResultsDetector`.
 
-### 🔹 Capa de infraestructura
+- **Capa de aplicación**: Alberga los casos de uso que orquestan la lógica del módulo.
+  - `WebSearch`: servicio principal que orquesta el flujo completo de búsqueda web.
 
-- **`GoogleNewsRSSFetcher`** : implementación de `WebSearchRepository` que consulta el feed RSS de Google News de forma asíncrona (usa `feedparser` y `asyncio.to_thread`).
-- **`SimpleInsufficientResultsDetector`** : detector concreto que analiza la cantidad, calidad y contenido mínimo de los resultados locales. Proporciona métodos como `filter_good_results` y `is_local_insufficient`.
-- **`WebSearchDocumentProcessor`** : convierte `WebSearchResult` en `SearchDocument` (para indexación) y genera IDs cortos a partir de la URL.
+La **inyección de dependencias** se gestiona mediante el contenedor `WebSearchContainer` construido con la librería **`dependency-injector`**, que registra y resuelve las dependencias del módulo.
 
-### 🔹 Capa de aplicación
+## Google News RSS como fuente externa
 
-- **`WebSearch`** : caso de uso que, a partir de una consulta, obtiene resultados web, limpia las URLs de Google News, realiza scraping del contenido y genera trozos (`Chunk`) y resultados híbridos (`HybridSearchResult`) listos para ser combinados con resultados locales.
-- **`WebFallbackHybridSearchService`** : servicio orquestador principal que coordina:
-  - Búsqueda híbrida local (a través de `FusionService`).
-  - Filtrado de resultados “buenos” usando el detector.
-  - Activación de la búsqueda web si los resultados locales son insuficientes.
-  - Almacenamiento asíncrono de los trozos web (indexación en el sistema de chunks).
-  - Fusión final de resultados (web + locales) evitando duplicados por URL.
+La fuente principal de noticias externas es el feed RSS de Google News (`https://news.google.com/rss`). El `GoogleNewsRSSFetcher` construye la URL de la consulta con los parámetros de idioma y país configurados (por defecto `es-419` y `US`).  La ejecución se realiza en un `ThreadPool` para no bloquear el event loop.
 
-La **inyección de dependencias** se realiza mediante un contenedor (`WebSearchContainer`) que registra las dependencias necesarias (repositorio RSS, detector, procesador, etc.) y las proporciona al orquestador.
+## Procesamiento de una noticia web
 
-## Flujo completo de búsqueda con fallback web
+Para cada resultado devuelto por el RSS, el sistema realiza los siguientes pasos:
 
-El siguiente diagrama representa el flujo que sigue una consulta cuando se utiliza `WebFallbackHybridSearchService`:
-```text
-Consulta del usuario
-↓
-┌──────────────────────────────────────────┐
-│ Búsqueda híbrida local (FusionService)   │
-└──────────────────────────────────────────┘
-↓
-┌──────────────────────────────────────────┐
-│ Filtrar resultados "buenos" usando       │
-│ SimpleInsufficientResultsDetector        │
-│(rrf_score > threshold y contenido mínimo)│
-└──────────────────────────────────────────┘
-↓
-┌──────────────────────────────────────────┐
-│ ¿Cantidad de resultados buenos ≥ k?      │
-└──────────────────────────────────────────┘
-│
-No │ Sí
-↓   ↓
-┌──────────────────┐     ┌──────────────────┐
-│ Activar fallback │     │ Devolver         │
-│ web              │     │ resultados       │
-└──────────────────┘     │ locales          │
-                         └──────────────────┘
-↓
-┌──────────────────────────────────────────┐
-│ WebSearch.fetch_web_results()            │
-│ - Obtener resultados RSS                 │
-│ - Limpiar URLs de Google News            │
-│ - Scraping del contenido                 │
-│ - Generar Chunk                          │
-│ - Crear HybridSearchResult               │
-└──────────────────────────────────────────┘
-↓
-┌──────────────────────────────────────────┐
-│ Almacenar los Chunks en el sistema       │
-│ (ChunkPersistenceService)                │
-│ (se ejecuta en segundo plano)            │
-└──────────────────────────────────────────┘
-↓
-┌──────────────────────────────────────────┐
-│ Fusionar resultados: web + locales       │
-│ (se priorizan los web)                   │
-└──────────────────────────────────────────┘
-↓
-┌──────────────────────────────────────────┐
-│ Devolver top‑k resultados combinados     │
-└──────────────────────────────────────────┘
-```
+1. **Decodificación de la URL de Google News**: las URLs de Google News suelen ser redirecciones. Se utiliza `googlenewsdecoder` para obtener la URL real del artículo.
 
-## Componentes clave en detalle
+2. **Scraping del artículo**: mediante `ScrapingService` (que internamente usa el mismo sistema de adquisición de datos: `Fetcher` + scrapers especializados). Se obtiene título, contenido, autores y fecha.
 
-### 1. `WebFallbackHybridSearchService`
+3. **Chunking**: el artículo completo se divide en fragmentos (chunks) usando `ChunkingService`. Cada chunk se convierte en un `HybridSearchResult` con `source_type=WEB`.
 
-Orquesta todo el flujo. Recibe en su constructor:
+4. **Persistencia**: Los chunks web se indexan en segundo plano (asíncrono) en ChromaDB y Elasticsearch para que estén disponibles en futuras búsquedas.
 
-- `fusion_service` (búsqueda híbrida local)
-- `web_search` (caso de uso de búsqueda web)
-- `chunk_persistence` (para indexar los nuevos trozos)
-- `insufficiency_detector` (para evaluar calidad y necesidad de fallback)
-- `settings` (configuración: umbrales, etc.)
+## Detector de insuficiencia (InsufficientResultsDetector)
 
-**Método principal**:
+El detector de insuficiencia evalúa si los resultados locales son suficientes para responder a la consulta sin necesidad de activar la búsqueda web. La implementación concreta `SimpleInsufficientResultsDetector` utiliza dos criterios: **cantidad** y **calidad** de los resultados.
 
-```python
-async def search(query: str, k: int = 10, user_id: Optional[str] = None) -> List[HybridSearchResult]
-```
-## 2. WebSearch (caso de uso)
+### Clasificación de un resultado como relevante
 
-Se encarga de la obtención y procesamiento completo de resultados web. Utiliza el repositorio RSS, un servicio de scraping y un servicio de chunking. Devuelve una tupla `(lista_de_HybridSearchResult, lista_de_Chunk)`.
+Un resultado (`HybridSearchResult`) se considera **relevante** (y por tanto contará para la suficiencia) según las siguientes reglas:
 
-### `fetch_web_results(query, max_results)`
+- **Resultado híbrido** (aparece tanto en la búsqueda dispersa como en la densa): se acepta automáticamente. La coincidencia en ambas vías es una señal fuerte de relevancia.
+- **Resultado puramente denso** (solo en la búsqueda semántica): se acepta si su `dense_score` (distancia coseno) es menor o igual a un umbral `max_dense_distance` (por defecto 0.6). Valores bajos indican alta similitud semántica.
+- **Resultado puramente disperso** (solo en la búsqueda léxica): se acepta siempre. Se asume que el modelo LMIR ya ha realizado un filtrado implícito al devolver únicamente los candidatos mejor puntuados.
 
-- Obtiene los RSS items.
-- Para cada uno:
-  - Limpia la URL de Google News (usa `googlenewsdecoder`).
-  - Realiza scraping del contenido completo.
-  - Divide el documento en trozos (`Chunk`).
-  - Convierte cada trozo en un `HybridSearchResult` (con `source_type=ResultSource.WEB` y `rrf_score=0.0`).
-- Retorna todos los `HybridSearchResult` y `Chunk` generados.
+Esta lógica está implementada en el método `is_good_result` (denominado así internamente, aunque conceptualmente clasifica la relevancia). El método `filter_good_results` devuelve la lista de resultados que cumplen la condición.
 
-## 3. `SimpleInsufficientResultsDetector`
+### Decisión de insuficiencia
 
-Implementa la lógica para decidir si los resultados locales son suficientes. Además de los métodos de la interfaz (`is_insufficient`, `get_insufficiency_score`), proporciona:
+Una vez contados los resultados relevantes (`good_local_count`), el detector decide si son suficientes comparando con el número deseado `k` (documentos solicitados). La función `is_local_insufficient` aplica la siguiente lógica:
 
-- `filter_good_results(results)` : devuelve solo aquellos resultados que superan el umbral `good_rrf_threshold`, tienen contenido mínimo y título no vacío.
-- `is_local_insufficient(good_local_count, k, extra=5)` : calcula si hacen falta resultados web (si `good_local_count < k`) y cuántos se necesitan (agregando un margen extra).
+- Si `good_local_count >= k`: se considera **suficiente** → retorna `(False, 0)`.
+- En caso contrario, se calcula el número de documentos que faltan: `needed = k - good_local_count`.
+- A ese número se le suma un margen `extra` (por defecto 5) para solicitar más resultados web de los estrictamente necesarios, compensando posibles fallos en el scraping o en la deduplicación.
+- Se retorna `(True, needed)`.
 
-Los umbrales (`good_rrf_threshold`, `min_content_length`) se obtienen de las `settings` o se pasan directamente.
+Esta estrategia garantiza que la búsqueda web solo se active cuando realmente no se alcanza la cantidad requerida de resultados locales de calidad, y pide un pequeño excedente para cubrir contingencias.
 
-## 4. `GoogleNewsRSSFetcher`
+## Limitaciones y consideraciones
+- Dependencia de Google News RSS: la disponibilidad de resultados está sujeta a los términos de servicio.
 
-Implementación concreta de `WebSearchRepository`. Parámetros de configuración:
-
-- `lang`: código de idioma (por defecto `es-419`).
-- `country`: código de país (por defecto `US`).
-
-Construye la URL de Google News RSS con los parámetros y parsea el feed usando `feedparser`. La ejecución se realiza en un `ThreadPool` para no bloquear el event loop (`asyncio.to_thread`).
-
-## 5. `WebSearchDocumentProcessor`
-
-Utilizado principalmente para **indexar** los resultados web (almacenarlos en el sistema de búsqueda). Convierte un `WebSearchResult` en un `SearchDocument` (con campos `source`, `url`, `title`, `content`, `authors` nulos y `date`). También genera un ID corto (`web_<hash16>`) para cada documento.
-
-## Integración con el pipeline principal
-
-El módulo de búsqueda web no se utiliza de forma aislada, sino como parte del servicio de búsqueda híbrida extendido. En el contenedor de dependencias (`WebSearchContainer`) se registran:
-
-- `google_news_rss_fetcher` (con idioma y país)
-- `insufficiency_detector` (con umbrales ajustables)
-- `web_search_document_processor`
-- `web_search` (caso de uso)
-- `web_fallback_hybrid_search_service` (orquestador)
-
-El orquestador se inyecta en los endpoints de la API (por ejemplo, `/hybrid/web`) y sustituye a la búsqueda híbrida local cuando se desea el fallback automático.
-
+- Latencia: la búsqueda web añade tiempo de respuesta (descarga y scraping). Por ello se limita a unos pocos documentos y se ejecuta en paralelo dentro de lo posible.
