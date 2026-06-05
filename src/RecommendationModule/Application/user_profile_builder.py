@@ -14,7 +14,7 @@ class UserProfileBuilder:
         embedder: BaseEmbedder,
         vector_store: BaseVectorStore,   # Interfaz para recuperar embeddings de documentos por ID
         like_weight: float = 1.0,
-        dislike_weight: float = -0.5,
+        dislike_weight: float = -1.0,
         max_queries: int = 20,
         profile_cache_ttl: int = 300   # tiempo de vida en segundos (5 minutos)
     ):
@@ -59,15 +59,14 @@ class UserProfileBuilder:
             user_feedbacks = await self.feedback_repo.get_by_user_id(user_id, limit=500)
             for fb in user_feedbacks:
                 emb = await self._get_doc_embedding(fb.chunk_id, fb.chunk_content)
-                weight = self.like_weight if fb.rating else self.dislike_weight
-                vectors.append(emb)
-                weights.append(weight)
+                vectors.append(emb.flatten())          # asegurar 1D
+                weights.append(self.like_weight if fb.rating else self.dislike_weight)
 
         if include_queries:
             queries = await self.search_history_repo.get_recent_queries(user_id, limit=self.max_queries)
             for q in queries:
                 emb = await self.embedder.encode_single(q)
-                vectors.append(emb)
+                vectors.append(emb.flatten())          # asegurar 1D
                 weights.append(query_weight)
 
         if not vectors:
@@ -77,7 +76,10 @@ class UserProfileBuilder:
         if total_weight == 0:
             return None
 
-        profile = np.zeros(vectors[0].shape)
+        # Inicializar perfil con la dimensión correcta (todas las formas son (dim,))
+        dim = vectors[0].shape[0]
+        profile = np.zeros(dim)
+
         for vec, w in zip(vectors, weights):
             profile += w * vec
         profile /= total_weight

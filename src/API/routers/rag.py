@@ -1,6 +1,5 @@
 from typing import Optional
 from fastapi import APIRouter, Depends
-from src.AuthModule.Application.dependencies import get_current_user_optional
 from src.API.schemas.rag_response import RAGResponseSchema
 from src.API.schemas.search_request import SearchQueryParams
 from src.API.dependencies import get_rag_orchestrator, get_search_history_repo
@@ -12,10 +11,9 @@ router = APIRouter(prefix="/rag", tags=["RAG"])
 async def rag_query(
     params: SearchQueryParams = Depends(),
     orchestrator = Depends(get_rag_orchestrator),
-    current_user: Optional[str] = Depends(get_current_user_optional),
     history_repo = Depends(get_search_history_repo)
 ):
-    user_id = current_user or params.user_id
+    user_id = params.user_id
     if user_id:
         await history_repo.save_query(user_id, params.q)
     result = await orchestrator.search(params.q, k=params.k, user_id=params.user_id)
