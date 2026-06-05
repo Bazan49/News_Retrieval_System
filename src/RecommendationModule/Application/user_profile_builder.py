@@ -14,7 +14,7 @@ class UserProfileBuilder:
         embedder: BaseEmbedder,
         vector_store: BaseVectorStore,   # Interfaz para recuperar embeddings de documentos por ID
         like_weight: float = 1.0,
-        dislike_weight: float = -0.5,
+        dislike_weight: float = -1.0,
         max_queries: int = 20,
         profile_cache_ttl: int = 300   # tiempo de vida en segundos (5 minutos)
     ):
