@@ -1,17 +1,17 @@
 from typing import Callable, List, Optional
 from src.RankingModule.Domain.Interfaces.scoring_strategy import ScoringStrategy
-from src.RankingModule.Domain.Entities.hybrid_search_result import HybridSearchResult, ResultSource
+from src.RankingModule.Domain.Entities.hybrid_search_result import HybridSearchResult
 
 import logging
-logger = logging.getLogger("RankingModule.RankingService") 
+logger = logging.getLogger("RankingModule.RankingService")
 
 class RankingService:
     """
     Servicio que calcula la prioridad de visualización (posicionamiento) de cada resultado
     mediante una combinación lineal de:
     - relevancia (normalizada a partir de rrf_score o cross_encoder_score)
-    - personalización (personalization_similarity)
-    - frescura (recency_score)
+    - personalización (personalization_similarity, normalizada dentro de la consulta)
+    - frescura (recency_factor)
     """
     def __init__(
         self,
@@ -31,8 +31,7 @@ class RankingService:
         """
         Calcula final_score para cada resultado y ordena la lista de mayor a menor prioridad.
         """
-        logger.info("Aplicando posicionamiento final de los resultados | entrada=%d", len(results))
-
+        logger.info("Aplicando posicionamiento final | entrada=%d", len(results))
         if not results:
             return results
 
@@ -40,13 +39,16 @@ class RankingService:
         for strategy in self.strategies:
             await strategy.apply(results, user_id=user_id)
 
-        # Normalizar la fuente de relevancia elegida
+        # Normalizar relevancia (rrf_score o cross_encoder_score) -> relevance_score
         if self.activate_cross_encoder:
-            self._min_max_normalize(results, score_fn=lambda r: r.cross_encoder_score or 0.0, default_value=0.5)
+            self._normalize_field(results, lambda r: r.cross_encoder_score or 0.0, "relevance_score", default_value=0.5)
         else:
-            self._min_max_normalize(results, score_fn=lambda r: r.rrf_score, default_value=0.5)
+            self._normalize_field(results, lambda r: r.rrf_score, "relevance_score", default_value=0.5)
 
-        # Calcular final_score
+        # Normalizar personalización -> personalization_similarity (sobrescribe el campo)
+        self._normalize_field(results, lambda r: r.personalization_similarity or 0.0, "personalization_similarity", default_value=0.5)
+
+        # Calcular final_score combinando los factores normalizados
         for r in results:
             r.final_score = (
                 self.w_relevance * r.relevance_score +
@@ -54,35 +56,34 @@ class RankingService:
                 self.w_recency * (r.recency_factor or 0.0)
             )
 
-        # Ordenar por final_score descendente
         results.sort(key=lambda x: x.final_score, reverse=True)
         return results
 
-    def _min_max_normalize(
+    def _normalize_field(
         self,
         results: List[HybridSearchResult],
         score_fn: Callable[[HybridSearchResult], float],
-        default_value: float = 0.5,
+        target_attr: str,
+        default_value: float = 0.5
     ) -> None:
         """
-        Aplica Min-Max normalization a un score extraído de HybridSearchResult
-        y guarda el resultado en `HybridSearchResult.relevance_score`.
+        Normaliza un campo numérico (extraído con score_fn) al rango [0,1] mediante min‑max
+        y guarda el resultado en el atributo `target_attr` de cada resultado.
+        Si todos los valores son iguales, asigna `default_value`.
         """
         scores = [score_fn(r) for r in results]
-
         if not scores:
             for r in results:
-                r.relevance_score = default_value
+                setattr(r, target_attr, default_value)
             return
 
         min_s = min(scores)
         max_s = max(scores)
-
-        for r, score in zip(results, scores):
-            if max_s > min_s:
-                norm_score = (score - min_s) / (max_s - min_s)
-            else:
-                # Todos iguales
-                norm_score = default_value 
-
-            r.relevance_score = norm_score
+        if max_s > min_s:
+            for r, score in zip(results, scores):
+                norm = (score - min_s) / (max_s - min_s)
+                setattr(r, target_attr, norm)
+        else:
+            for r, score in zip(results, scores):
+                norm = default_value
+                setattr(r, target_attr, norm)
