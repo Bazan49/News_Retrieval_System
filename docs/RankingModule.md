@@ -19,7 +19,7 @@ El módulo sigue una **arquitectura limpia** con capas bien diferenciadas:
   - `RRFFusionStrategy`: implementa la fusión mediante RRF.
 
 - **Capa de aplicación**: Servicios que orquestan el pipeline de ranking.
-  - `RankingService`: recibe una lista de resultados, aplica todas las `ScoringStrategy` inyectadas, normaliza la relevancia base (RRF o cross‑encoder) mediante min‑max, combina linealmente los factores y ordena por `final_score`.
+  - `RankingService`: recibe una lista de resultados, aplica todas las `ScoringStrategy` inyectadas, normaliza la relevancia base (RRF o cross‑encoder) y la similitud de personalización mediante min‑max, combina linealmente los factores y ordena por `final_score`.
   - `FusionService` (parte del ranking híbrido): se encarga únicamente de fusionar los resultados dispersos y densos.
 
 La **inyección de dependencias** se centraliza en `RankingContainer`.
@@ -62,13 +62,7 @@ La relevancia obtenida durante las etapas de recuperación y re-ranking constitu
 Con el objetivo de incorporar estos criterios al proceso de ordenación, el sistema calcula una puntuación final (`final_score`) mediante una combinación lineal ponderada de los distintos factores considerados:
 
 $$
-\text{final\_score}
-=
-w_{rel} \cdot \text{relevance\_score}
-+
-w_{per} \cdot \text{personalization\_similarity}
-+
-w_{rec} \cdot \text{recency\_factor}
+\text{final\_score} = w_{rel} \cdot \text{relevance\_score} + w_{per} \cdot \text{personalization\_score} + w_{rec} \cdot \text{recency\_factor}
 $$
 
 donde:
@@ -112,27 +106,22 @@ donde el valor máximo 1 se obtiene para documentos publicados en la fecha actua
 
 En términos de implementación, cuando la fecha de publicación no puede ser interpretada correctamente o no está disponible, se asigna un valor neutro de 0.5. Asimismo, en caso de detectar inconsistencias temporales (por ejemplo, fechas futuras), se asigna directamente el valor máximo de 1.0.
 
-### Factor de personalización (personalization_similarity)
+### Factor de personalización (personalization_score)
 
-El factor de personalización ajusta la relevancia de los documentos en función de los intereses del usuario, representados mediante un vector de perfil semántico. Este perfil resume el comportamiento histórico del usuario en el sistema y permite capturar afinidades temáticas más allá de la consulta actual.
-
-Una vez construido, se evalúa su cercanía semántica con cada documento mediante la similitud coseno:
+El factor de personalización ajusta la relevancia de los documentos en función de los intereses del usuario, representados mediante un vector de perfil semántico. Se calcula la similitud coseno entre el perfil del usuario y el embedding del documento:
 
 $$
-\text{personalization\_similarity}(d)
-=
-\frac{\mathbf{p} \cdot \mathbf{e}_d}{\|\mathbf{p}\| \, \|\mathbf{e}_d\|}
+\text{personalization\_similarity}(d) = \frac{\mathbf{p} \cdot \mathbf{e}_d}{\|\mathbf{p}\| \, \|\mathbf{e}_d\|}
 $$
 
 donde:
+
 - $\mathbf{p}$ representa el vector de perfil del usuario
 - $\mathbf{e}_d$ representa el embedding del documento
 
-El valor resultante está acotado en el intervalo $[-1, 1]$. Un valor cercano a $(1)$ indica una alta afinidad semántica entre el documento y los intereses del usuario, mientras que valores próximos a $(-1)$ reflejan una fuerte oposición (por ejemplo, documentos relacionados con «disgustos» explícitos). Los valores negativos reducen la puntuación final, penalizando documentos que no se ajustan a las preferencias del usuario.
+El valor resultante está acotado en el intervalo $[-1, 1]$. Posteriormente, este valor se normaliza mediante min‑max sobre el conjunto de resultados de la consulta, transformándolo a un `personalization_score` en $[0,1]$. En ausencia de historial suficiente (usuario nuevo o perfil no disponible), el sistema asigna un valor neutro de 0.
 
-En ausencia de historial suficiente (usuario nuevo o perfil no disponible), el sistema asigna un valor neutro de 0, evitando introducir sesgos en la ordenación inicial.
-
-## Normalización de relevancia (min-max)
+## Normalización de relevancia y personalización (min-max)
 
 Las puntuaciones de relevancia obtenidas tras la fusión híbrida (RRF) o mediante el cross-encoder no se encuentran acotadas en un rango fijo y, por tanto, no son directamente comparables con el resto de factores del modelo de ranking. Para homogeneizar estas escalas y permitir una combinación lineal coherente, se aplica una normalización min-max sobre el conjunto de documentos recuperados en cada consulta.
 
@@ -145,13 +134,7 @@ $$
 {\max_{d' \in R} s(d') - \min_{d' \in R} s(d')}
 $$
 
-donde \(R\) representa el conjunto de documentos candidatos tras la fase de recuperación.
-
-Este procedimiento garantiza que las puntuaciones resultantes queden acotadas en el intervalo:
-
-$$
-\text{relevance\_score} \in [0,1]
-$$
+donde $R$ representa el conjunto de documentos candidatos tras la fase de recuperación. Este procedimiento garantiza que las puntuaciones resultantes queden acotadas en el intervalo $[0,1]$.
 
 En el caso particular en el que todos los documentos presentan la misma puntuación $(max = min)$, no es posible aplicar la normalización estándar. En esta situación degenerada, se asigna un valor por defecto constante (`default_value = 0.5`) a todos los documentos, evitando así la división por cero y manteniendo una escala neutra en ausencia de variabilidad.
 
@@ -175,7 +158,7 @@ Estos valores se leen a través de `Settings` y se inyectan en `RankingContainer
 
 - **Modularidad**: cada factor de ranking es independiente y fácil de añadir/quitar.
 - **Configuración externa**: todos los pesos y parámetros se modifican desde `.env` sin tocar código.
-- **Explicabilidad**: los campos intermedios (`relevance_score`, `personalization_similarity`, `recency_factor`) se devuelven en la API, permitiendo depurar el orden final.
+- **Explicabilidad**: los campos intermedios (`relevance_score`, `personalization_score`, `recency_factor`) se devuelven en la API, permitiendo depurar el orden final.
 - **Eficiencia**: las estrategias de scoring se ejecutan solo una vez por consulta, y el cross‑encoder solo sobre un subconjunto reducido.
 
 ## Limitaciones
